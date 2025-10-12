@@ -1,10 +1,26 @@
 import './App.css'
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import Navbar from "./components/Navbar";
+import Home from "./pages/Home";
+import Themes from "./pages/Themes";
+import Submit from "./pages/Submit";
+import About from "./pages/About";
 
 function App() {
   return (
-    <div className="flex h-screen items-center justify-center bg-mocha-base text-mocha-text">
-      <h1 className="text-4xl font-bold">👻 Projectora is alive or not!</h1>
-    </div>
+    <Router>
+      <div className="min-h-screen bg-base dark:bg-base-dark transition-colors duration-300">
+        <Navbar />
+        <main className="p-6">
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/themes" element={<Themes />} />
+            <Route path="/submit" element={<Submit />} />
+            <Route path="/about" element={<About />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   )
 }
 
