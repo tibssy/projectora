@@ -12,7 +12,7 @@ Built with:
 
 ## Demo
 
-> TODO: Add a screenshot or GIF of your animation here
+> TODO: screenshot
 
 ---
 
