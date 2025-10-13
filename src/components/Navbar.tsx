@@ -1,14 +1,30 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { Moon, Sun, Menu, X } from "lucide-react";
 
 const Navbar = () => {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(() => {
+    if (localStorage.theme === 'dark') {
+      return true;
+    }
+    return !('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
+
   const [isOpen, setIsOpen] = useState(false);
 
-  const toggleTheme = () => {
+  useEffect(() => {
     const html = document.documentElement;
-    html.classList.toggle("dark");
+    if (isDark) {
+      html.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      html.classList.remove('dark');
+
+      localStorage.setItem('theme', 'light');
+    }
+  }, [isDark]);
+
+  const toggleTheme = () => {
     setIsDark(!isDark);
   };
 
