@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import AnimationCard from "../components/AnimationCard";
 
 // Mock data for our animations. Later, this will come from Firebase.
@@ -35,17 +36,17 @@ const Home = () => {
         Halloween Collection
       </h1>
 
-      {/* Responsive Grid for Animation Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
         {animations.map((anim) => (
-          <AnimationCard
-            key={anim.id}
-            title={anim.title}
-            theme={anim.theme}
-            thumbnailUrl={anim.thumbnailUrl}
-            likes={anim.likes}
-            views={anim.views}
-          />
+          <Link to={`/view/${anim.id}`} key={anim.id}>
+            <AnimationCard
+              title={anim.title}
+              theme={anim.theme}
+              thumbnailUrl={anim.thumbnailUrl}
+              likes={anim.likes}
+              views={anim.views}
+            />
+          </Link>
         ))}
       </div>
     </div>

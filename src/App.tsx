@@ -4,6 +4,7 @@ import Home from "./pages/Home";
 import Themes from "./pages/Themes";
 import Submit from "./pages/Submit";
 import About from "./pages/About";
+import AnimationViewer from "./pages/AnimationViewer";
 
 function App() {
   return (
@@ -13,6 +14,7 @@ function App() {
         <main className="p-6">
           <Routes>
             <Route path="/" element={<Home />} />
+            <Route path="/view/:animationId" element={<AnimationViewer />} />
             <Route path="/themes" element={<Themes />} />
             <Route path="/submit" element={<Submit />} />
             <Route path="/about" element={<About />} />
