@@ -1,4 +1,3 @@
-import './App.css'
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
@@ -8,8 +7,8 @@ import About from "./pages/About";
 
 function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-base dark:bg-base-dark transition-colors duration-300">
+    <Router basename="/projectora/"> 
+      <div className="min-h-screen bg-light-base dark:bg-dark-base dark:text-dark-text transition-colors duration-500">
         <Navbar />
         <main className="p-6">
           <Routes>

@@ -1,13 +1,32 @@
 <!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>projectora</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<html lang="en" class="dark">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>projectora</title>
+  <script type="text/javascript">
+    // Read the path from the query parameter `p`
+    var l = window.location;
+    var path = l.search.slice(1).split('&').filter(function (s) {
+      return s.startsWith('p=');
+    })[0];
+
+    // If a path was found, rewrite the URL
+    if (path) {
+      window.history.replaceState(
+        null,
+        null,
+        l.pathname.slice(0, -1) + decodeURIComponent(path.slice(2)) + l.hash
+      );
+    }
+  </script>
+</head>
+
+<body>
+  <div id="root"></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+
 </html>
