@@ -1,17 +1,13 @@
-// src/pages/AnimationViewer.tsx
-
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { useRive } from '@rive-app/react-canvas';
 
-// We need access to the same animation data.
-// In a real app, this might be a shared file or a global state.
-// For now, we can just copy it here.
 const animations = [
   {
     id: 1,
-    title: 'Pumpkin Eyes',
+    title: 'Head Character',
     theme: 'Halloween',
-    riveUrl: 'pumpkin_eyes.riv', // Placeholder for the actual Rive file
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1760458852/monster_test_oswvln.riv',
     likes: 1345,
     views: 25800,
   },
@@ -35,12 +31,14 @@ const animations = [
 
 const AnimationViewer = () => {
   const { animationId } = useParams<{ animationId: string }>();
-  
-  // Find the animation data that matches the ID from the URL.
-  // We use `parseInt` because the ID from the URL is a string.
   const animation = animations.find(anim => anim.id === parseInt(animationId || ''));
 
-  // Handle case where no animation is found for the given ID
+  const { RiveComponent } = useRive({
+    src: animation ? animation.riveUrl : '',
+    autoplay: true,
+    stateMachines: 'State Machine 1',
+  });
+
   if (!animation) {
     return (
       <div className="text-center mt-20">
@@ -68,13 +66,11 @@ const AnimationViewer = () => {
         {animation.title}
       </h1>
 
-      {/* Rive Canvas Placeholder */}
-      <div className="aspect-video w-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-lg flex items-center justify-center">
-        <p className="text-light-text/50 dark:text-dark-text/50">
-          [ Rive Animation Canvas for "{animation.riveUrl}" will go here ]
-        </p>
+      {/* Rive Canvas */}
+      <div className="aspect-video w-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-lg">
+        <RiveComponent className="w-full h-full rounded-lg" />
       </div>
-      
+
       {/* Placeholder for controls and stats */}
       <div className="mt-6 flex justify-between items-center">
         <div className="flex gap-4">

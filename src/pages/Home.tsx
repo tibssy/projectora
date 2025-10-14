@@ -5,9 +5,9 @@ import AnimationCard from "../components/AnimationCard";
 const animations = [
   {
     id: 1,
-    title: "Pumpkin Eyes",
+    title: "Head Character",
     theme: "Halloween",
-    thumbnailUrl: "https://placehold.co/600x400/ff79c6/FFFFFF?text=🎃", // Placeholder image
+    thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1760460805/swappy-20251014_175253_n1mw1j.png", // Placeholder image
     likes: 1345,
     views: 25800,
   },
