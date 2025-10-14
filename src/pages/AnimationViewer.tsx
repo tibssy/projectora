@@ -1,6 +1,8 @@
+import { useRef, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useRive } from '@rive-app/react-canvas';
+import { usePoseTracking } from '../hooks/usePoseTracking';
 
 const animations = [
   {
@@ -29,15 +31,55 @@ const animations = [
   },
 ];
 
+const SMOOTHING_ALPHA = 0.3; // Tweak this for more/less smoothing
+
 const AnimationViewer = () => {
   const { animationId } = useParams<{ animationId: string }>();
   const animation = animations.find(anim => anim.id === parseInt(animationId || ''));
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const smoothedPointerRef = useRef({ x: 0.5, y: 0.5 });
 
-  const { RiveComponent } = useRive({
+  const {
+    latestLandmark,
+    isWebcamRunning,
+    isLoading,
+    error,
+    startWebcam,
+    stopWebcam
+  } = usePoseTracking(videoRef);
+
+  const { RiveComponent, canvas } = useRive({
     src: animation ? animation.riveUrl : '',
     autoplay: true,
     stateMachines: 'State Machine 1',
   });
+
+  useEffect(() => {
+    if (!latestLandmark || !canvas || !isWebcamRunning) return;
+
+    const rawNormalizedX = 1.0 - latestLandmark.x;
+    const rawNormalizedY = latestLandmark.y;
+
+    const newSmoothedX = (rawNormalizedX * SMOOTHING_ALPHA) + (smoothedPointerRef.current.x * (1 - SMOOTHING_ALPHA));
+    const newSmoothedY = (rawNormalizedY * SMOOTHING_ALPHA) + (smoothedPointerRef.current.y * (1 - SMOOTHING_ALPHA));
+
+    smoothedPointerRef.current = { x: newSmoothedX, y: newSmoothedY };
+
+    const riveRect = canvas.getBoundingClientRect();
+    const localX = newSmoothedX * riveRect.width;
+    const localY = newSmoothedY * riveRect.height;
+    const clientX = riveRect.left + localX;
+    const clientY = riveRect.top + localY;
+
+    const fakeEvent = new MouseEvent('mousemove', {
+      view: window,
+      bubbles: true,
+      cancelable: true,
+      clientX: clientX,
+      clientY: clientY,
+    });
+    canvas.dispatchEvent(fakeEvent);
+  }, [latestLandmark, canvas, isWebcamRunning]);
 
   if (!animation) {
     return (
@@ -51,40 +93,30 @@ const AnimationViewer = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      {/* Back to Home Button */}
-      <Link 
-        to="/" 
-        className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"
-      >
-        <ArrowLeft size={16} />
-        Back to Gallery
-      </Link>
-
-      {/* Animation Title */}
-      <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">
-        {animation.title}
-      </h1>
-
-      {/* Rive Canvas */}
-      <div className="aspect-video w-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-lg">
-        <RiveComponent className="w-full h-full rounded-lg" />
-      </div>
-
-      {/* Placeholder for controls and stats */}
+    <div className="max-w-4xl mx-auto relative">
+      <video ref={videoRef} autoPlay playsInline muted className={`absolute top-4 right-4 z-10 w-48 h-36 border-2 border-red-500 rounded-lg shadow-lg transition-opacity duration-300 ${isWebcamRunning ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}></video>
+      <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
+      <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
+      <div className="aspect-video w-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-lg"><RiveComponent className="w-full h-full rounded-lg" /></div>
       <div className="mt-6 flex justify-between items-center">
-        <div className="flex gap-4">
-          <button className="px-4 py-2 bg-light-mauve dark:bg-dark-mauve text-light-base dark:text-dark-base rounded-lg font-semibold">
-            ❤️ Like ({animation.likes})
-          </button>
-          <button className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold">
-            Start Camera Control
+        <div className="flex items-center gap-4">
+          <button className="px-4 py-2 bg-light-mauve/80 dark:bg-dark-mauve/80 text-light-base dark:text-dark-base rounded-lg font-semibold hover:bg-light-mauve dark:hover:bg-dark-mauve transition-colors">❤️ Like ({animation.likes})</button>
+          <button onClick={isWebcamRunning ? stopWebcam : startWebcam} disabled={isLoading} className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all">
+            {isLoading ? 'Loading Model...' : isWebcamRunning ? 'Stop Camera Control' : 'Start Camera Control'}
           </button>
         </div>
-        <div className="text-sm text-light-text/70 dark:text-dark-text/70">
-          👁 {animation.views.toLocaleString()} views
-        </div>
+        <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
       </div>
+      {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
+      {isWebcamRunning && (
+        <div className="mt-4 p-4 bg-light-surface dark:bg-dark-surface rounded-lg text-xs font-mono text-light-text/80 dark:text-dark-text/80">
+          <p className="font-bold mb-2">Live Tracking Data:</p>
+          <p>Webcam Status: <span className="text-green-400">ACTIVE</span></p>
+          <p>Nose X: {latestLandmark?.x.toFixed(3)}</p>
+          <p>Nose Y: {latestLandmark?.y.toFixed(3)}</p>
+          <p>Nose Z (depth): {latestLandmark?.z.toFixed(3)}</p>
+        </div>
+      )}
     </div>
   );
 };
