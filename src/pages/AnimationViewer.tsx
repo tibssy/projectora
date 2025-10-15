@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { useRive } from '@rive-app/react-canvas';
@@ -31,13 +31,14 @@ const animations = [
   },
 ];
 
-const SMOOTHING_ALPHA = 0.3; // Tweak this for more/less smoothing
+const SMOOTHING_ALPHA = 0.3;
 
 const AnimationViewer = () => {
   const { animationId } = useParams<{ animationId: string }>();
   const animation = animations.find(anim => anim.id === parseInt(animationId || ''));
   const videoRef = useRef<HTMLVideoElement>(null);
   const smoothedPointerRef = useRef({ x: 0.5, y: 0.5 });
+  const [isVideoVisible, setIsVideoVisible] = useState(true);
 
   const {
     latestLandmark,
@@ -93,20 +94,52 @@ const AnimationViewer = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto relative">
-      <video ref={videoRef} autoPlay playsInline muted className={`absolute top-4 right-4 z-10 w-48 h-36 border-2 border-red-500 rounded-lg shadow-lg transition-opacity duration-300 ${isWebcamRunning ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}></video>
+    <div className="max-w-4xl mx-auto">
       <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
       <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
-      <div className="aspect-video w-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-lg"><RiveComponent className="w-full h-full rounded-lg" /></div>
+      
+      {/* Container for Rive Canvas and Video Overlay */}
+      <div className="relative aspect-video w-full">
+        {/* Rive Canvas (Bottom Layer) */}
+        <div className="w-full h-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-lg">
+          <RiveComponent className="w-full h-full rounded-lg" />
+        </div>
+        
+        {/* Video Overlay (Top Layer) */}
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={`
+            absolute top-0 left-0 w-full h-full object-cover rounded-lg
+            transform -scale-x-100  /* Mirror effect */
+            transition-opacity duration-500
+            ${isWebcamRunning && isVideoVisible ? 'opacity-30' : 'opacity-0'}
+            pointer-events-none /* Allows clicks to pass through */
+          `}
+        ></video>
+      </div>
+
       <div className="mt-6 flex justify-between items-center">
         <div className="flex items-center gap-4">
           <button className="px-4 py-2 bg-light-mauve/80 dark:bg-dark-mauve/80 text-light-base dark:text-dark-base rounded-lg font-semibold hover:bg-light-mauve dark:hover:bg-dark-mauve transition-colors">❤️ Like ({animation.likes})</button>
           <button onClick={isWebcamRunning ? stopWebcam : startWebcam} disabled={isLoading} className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all">
             {isLoading ? 'Loading Model...' : isWebcamRunning ? 'Stop Camera Control' : 'Start Camera Control'}
           </button>
+          
+          {isWebcamRunning && (
+            <button
+              onClick={() => setIsVideoVisible(!isVideoVisible)}
+              className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold transition-all hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve"
+            >
+              {isVideoVisible ? 'Hide Mirror' : 'Show Mirror'}
+            </button>
+          )}
         </div>
         <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
       </div>
+      
       {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
       {isWebcamRunning && (
         <div className="mt-4 p-4 bg-light-surface dark:bg-dark-surface rounded-lg text-xs font-mono text-light-text/80 dark:text-dark-text/80">
