@@ -32,14 +32,15 @@ const animations = [
 ];
 
 const SMOOTHING_ALPHA = 0.3;
+const DEFAULT_OPACITY = 0.5;
 
 const AnimationViewer = () => {
   const { animationId } = useParams<{ animationId: string }>();
   const animation = animations.find(anim => anim.id === parseInt(animationId || ''));
   const videoRef = useRef<HTMLVideoElement>(null);
   const smoothedPointerRef = useRef({ x: 0.5, y: 0.5 });
-  const [videoOpacity, setVideoOpacity] = useState(0.3);
-  const [lastOpacity, setLastOpacity] = useState(0.3);
+  const [videoOpacity, setVideoOpacity] = useState(DEFAULT_OPACITY);
+  const [lastOpacity, setLastOpacity] = useState(DEFAULT_OPACITY);
 
   const {
     latestLandmark,
@@ -82,6 +83,13 @@ const AnimationViewer = () => {
     });
     canvas.dispatchEvent(fakeEvent);
   }, [latestLandmark, canvas, isWebcamRunning]);
+
+  useEffect(() => {
+    if (isWebcamRunning) {
+      setVideoOpacity(DEFAULT_OPACITY);
+      setLastOpacity(DEFAULT_OPACITY);
+    }
+  }, [isWebcamRunning]);
 
   if (!animation) {
     return (

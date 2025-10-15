@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useTransition } from 'react';
 import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 
 export type Landmark = {
@@ -13,8 +13,10 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const [_isPending, startTransition] = useTransition();
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   useEffect(() => {
     const createPoseLandmarker = async () => {
@@ -52,18 +54,21 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
 
     landmarker.detectForVideo(video, performance.now(), (result) => {
       if (result.landmarks && result.landmarks.length > 0) {
-        setLatestLandmark(result.landmarks[0][0]);
+        startTransition(() => {
+          setLatestLandmark(result.landmarks[0][0]);
+        });
       }
     });
 
     animationFrameIdRef.current = requestAnimationFrame(predictWebcam);
-  }, [videoRef]);
+  }, [videoRef, startTransition]);
 
   const startWebcam = useCallback(async () => {
     if (isLoading || isWebcamRunning || !videoRef.current) return;
 
     try {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        streamRef.current = stream;
         videoRef.current.srcObject = stream;
         videoRef.current.addEventListener('loadeddata', () => {
             setIsWebcamRunning(true);
@@ -76,18 +81,23 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
   }, [isLoading, isWebcamRunning, videoRef, predictWebcam]);
 
   const stopWebcam = useCallback(() => {
-    if (!isWebcamRunning || !videoRef.current || !videoRef.current.srcObject) return;
-
-    setIsWebcamRunning(false);
     if (animationFrameIdRef.current) {
       cancelAnimationFrame(animationFrameIdRef.current);
+      animationFrameIdRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+        videoRef.current.srcObject = null;
     }
     
-    const stream = videoRef.current.srcObject as MediaStream;
-    stream.getTracks().forEach(track => track.stop());
-    videoRef.current.srcObject = null;
+    setIsWebcamRunning(false);
     
-  }, [isWebcamRunning, videoRef]);
+  }, [videoRef]);
 
   useEffect(() => {
     return () => {
