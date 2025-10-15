@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useRive } from '@rive-app/react-canvas';
 import { usePoseTracking } from '../hooks/usePoseTracking';
 
@@ -38,7 +38,8 @@ const AnimationViewer = () => {
   const animation = animations.find(anim => anim.id === parseInt(animationId || ''));
   const videoRef = useRef<HTMLVideoElement>(null);
   const smoothedPointerRef = useRef({ x: 0.5, y: 0.5 });
-  const [isVideoVisible, setIsVideoVisible] = useState(true);
+  const [videoOpacity, setVideoOpacity] = useState(0.3);
+  const [lastOpacity, setLastOpacity] = useState(0.3);
 
   const {
     latestLandmark,
@@ -93,14 +94,27 @@ const AnimationViewer = () => {
     );
   }
 
+  const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newOpacity = parseFloat(e.target.value);
+    setVideoOpacity(newOpacity);
+    if (newOpacity > 0) {
+      setLastOpacity(newOpacity);
+    }
+  };
+
+  const toggleMirrorVisibility = () => {
+    if (videoOpacity > 0) {
+      setVideoOpacity(0);
+    } else {
+      setVideoOpacity(lastOpacity > 0 ? lastOpacity : 0.3);
+    }
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
       <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
-      
-      {/* Container for Rive Canvas and Video Overlay */}
       <div className="relative aspect-video w-full">
-        {/* Rive Canvas (Bottom Layer) */}
         <div className="w-full h-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-lg">
           <RiveComponent className="w-full h-full rounded-lg" />
         </div>
@@ -111,30 +125,39 @@ const AnimationViewer = () => {
           autoPlay
           playsInline
           muted
+          style={{ opacity: isWebcamRunning ? videoOpacity : 0 }}
           className={`
             absolute top-0 left-0 w-full h-full object-cover rounded-lg
-            transform -scale-x-100  /* Mirror effect */
-            transition-opacity duration-500
-            ${isWebcamRunning && isVideoVisible ? 'opacity-30' : 'opacity-0'}
-            pointer-events-none /* Allows clicks to pass through */
+            transform -scale-x-100
+            transition-opacity duration-300
+            pointer-events-none
           `}
         ></video>
       </div>
 
       <div className="mt-6 flex justify-between items-center">
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 flex-wrap">
           <button className="px-4 py-2 bg-light-mauve/80 dark:bg-dark-mauve/80 text-light-base dark:text-dark-base rounded-lg font-semibold hover:bg-light-mauve dark:hover:bg-dark-mauve transition-colors">❤️ Like ({animation.likes})</button>
           <button onClick={isWebcamRunning ? stopWebcam : startWebcam} disabled={isLoading} className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all">
             {isLoading ? 'Loading Model...' : isWebcamRunning ? 'Stop Camera Control' : 'Start Camera Control'}
           </button>
           
+          {/* Opacity Control Group */}
           {isWebcamRunning && (
-            <button
-              onClick={() => setIsVideoVisible(!isVideoVisible)}
-              className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold transition-all hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve"
-            >
-              {isVideoVisible ? 'Hide Mirror' : 'Show Mirror'}
-            </button>
+            <div className="flex items-center gap-2 p-2 bg-light-surface dark:bg-dark-surface rounded-lg">
+              <button onClick={toggleMirrorVisibility} title={videoOpacity > 0 ? "Hide Mirror" : "Show Mirror"}>
+                {videoOpacity > 0 ? <Eye size={20} /> : <EyeOff size={20} />}
+              </button>
+              <input 
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={videoOpacity}
+                onChange={handleOpacityChange}
+                className="w-24 h-2 bg-light-text/20 dark:bg-dark-text/20 rounded-lg appearance-none cursor-pointer accent-light-mauve dark:accent-dark-mauve"
+              />
+            </div>
           )}
         </div>
         <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
