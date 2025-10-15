@@ -15,9 +15,9 @@ const animations = [
   },
   {
     id: 2,
-    title: 'Ghostly Peek',
+    title: 'CUte Monster',
     theme: 'Halloween',
-    riveUrl: 'ghostly_peek.riv',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1760489767/monster_jump_test_y6thvr.riv',
     likes: 980,
     views: 18200,
   },

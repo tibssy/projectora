@@ -14,6 +14,11 @@ const About = () => {
           (<a href="https://rive.app/marketplace/9398-17870-mouse-following-head-character/" className="underline">Original File</a>)
         </li>
         <li>
+          <strong>"CUte Monster"</strong> by <a href="https://rive.app/@saurav_b/" className="underline">saurav_b</a>, 
+          downloaded from the Rive Community. Licensed under <a href="https://creativecommons.org/licenses/by/4.0/" className="underline">CC BY 4.0</a>. 
+          (<a href="https://rive.app/marketplace/12726-24108-cute-monster/" className="underline">Original File</a>)
+        </li>
+        <li>
           <strong>"Ghostly Peek"</strong> by Another Author...
         </li>
         {/* Add one for each community animation you use */}

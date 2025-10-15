@@ -13,9 +13,9 @@ const animations = [
   },
   {
     id: 2,
-    title: "Ghostly Peek",
+    title: "CUte Monster",
     theme: "Halloween",
-    thumbnailUrl: "https://placehold.co/600x400/8be9fd/FFFFFF?text=👻", // Placeholder image
+    thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1760489750/swappy-20251015_015304_visbfq.png", // Placeholder image
     likes: 980,
     views: 18200,
   },
