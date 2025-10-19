@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useRive } from '@rive-app/react-canvas';
 import { usePoseTracking } from '../hooks/usePoseTracking';
+import { BackgroundControls } from '../components/BackgroundControls';
 
 const animations = [
   {
@@ -23,9 +24,9 @@ const animations = [
   },
   {
     id: 3,
-    title: 'Spider Drop',
+    title: 'Test Monster',
     theme: 'Halloween',
-    riveUrl: 'spider_drop.riv',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1760837957/monster3_2_wiqb8z.riv',
     likes: 2100,
     views: 42500,
   },
@@ -41,6 +42,10 @@ const AnimationViewer = () => {
   const smoothedPointerRef = useRef({ x: 0.5, y: 0.5 });
   const [videoOpacity, setVideoOpacity] = useState(DEFAULT_OPACITY);
   const [lastOpacity, setLastOpacity] = useState(DEFAULT_OPACITY);
+
+  const [backgroundMode, setBackgroundMode] = useState<'solid' | 'gradient'>('solid');
+  const [bgColor1, setBgColor1] = useState('#313244'); // Default to Catppuccin surface color
+  const [bgColor2, setBgColor2] = useState('#b4befe'); // Default to Catppuccin lavender
 
   const {
     latestLandmark,
@@ -118,12 +123,16 @@ const AnimationViewer = () => {
     }
   };
 
+  const backgroundStyle = backgroundMode === 'solid'
+    ? bgColor1
+    : `linear-gradient(to bottom right, ${bgColor1}, ${bgColor2})`;
+
   return (
     <div className="max-w-4xl mx-auto">
       <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
       <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
       <div className="relative aspect-video w-full">
-        <div className="w-full h-full bg-light-surface dark:bg-dark-surface rounded-lg shadow-lg">
+        <div className="w-full h-full rounded-lg shadow-lg" style={{ background: backgroundStyle }}>
           <RiveComponent className="w-full h-full rounded-lg" />
         </div>
         
@@ -170,6 +179,14 @@ const AnimationViewer = () => {
         </div>
         <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
       </div>
+      <BackgroundControls
+          mode={backgroundMode}
+          setMode={setBackgroundMode}
+          color1={bgColor1}
+          setColor1={setBgColor1}
+          color2={bgColor2}
+          setColor2={setBgColor2}
+        />
       
       {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
       {isWebcamRunning && (

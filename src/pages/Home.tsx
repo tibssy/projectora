@@ -21,9 +21,9 @@ const animations = [
   },
   {
     id: 3,
-    title: "Spider Drop",
+    title: "Test Monster",
     theme: "Halloween",
-    thumbnailUrl: "https://placehold.co/600x400/50fa7b/FFFFFF?text=🕷️", // Placeholder image
+    thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1760825385/monster3_hqsfdu.png", // Placeholder image
     likes: 2100,
     views: 42500,
   },
