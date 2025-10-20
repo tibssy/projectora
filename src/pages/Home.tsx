@@ -5,27 +5,27 @@ import AnimationCard from "../components/AnimationCard";
 const animations = [
   {
     id: 1,
-    title: "Head Character",
+    title: "Frenzywhisk",
     theme: "Halloween",
-    thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1760460805/swappy-20251014_175253_n1mw1j.png", // Placeholder image
-    likes: 1345,
-    views: 25800,
+    thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1760925652/swappy-20251020_025520_isyfam.png", // Placeholder image
+    likes: 0,
+    views: 1,
   },
   {
     id: 2,
-    title: "CUte Monster",
+    title: "Mormo",
     theme: "Halloween",
-    thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1760489750/swappy-20251015_015304_visbfq.png", // Placeholder image
-    likes: 980,
-    views: 18200,
+    thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1760902775/monster2_cxgvtr.png", // Placeholder image
+    likes: 0,
+    views: 1,
   },
   {
     id: 3,
-    title: "Test Monster",
+    title: "Vicis Chomp",
     theme: "Halloween",
     thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1760825385/monster3_hqsfdu.png", // Placeholder image
-    likes: 2100,
-    views: 42500,
+    likes: 0,
+    views: 1,
   },
 ];
 
