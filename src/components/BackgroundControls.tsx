@@ -1,8 +1,6 @@
-// src/components/BackgroundControls.tsx
-
 import { HexColorPicker } from 'react-colorful';
+import { Upload, X } from 'lucide-react';
 
-// Define the props our component will accept from its parent
 type BackgroundControlsProps = {
   mode: 'solid' | 'gradient';
   setMode: (mode: 'solid' | 'gradient') => void;
@@ -12,6 +10,9 @@ type BackgroundControlsProps = {
   setColor2: (color: string) => void;
   gradientAngle: number;
   setGradientAngle: (angle: number) => void;
+  overlayImageUrl: string | null;
+  onImageUpload: (file: File) => void;
+  onImageClear: () => void;
 };
 
 export const BackgroundControls = ({
@@ -23,11 +24,22 @@ export const BackgroundControls = ({
   setColor2,
   gradientAngle,
   setGradientAngle,
+  overlayImageUrl,
+  onImageUpload,
+  onImageClear,
 }: BackgroundControlsProps) => {
 
   const buttonBaseClass = "px-3 py-1 text-sm rounded-md transition-colors";
   const activeButtonClass = "bg-light-mauve dark:bg-dark-mauve text-light-base dark:text-dark-base";
   const inactiveButtonClass = "bg-light-surface/50 dark:bg-dark-surface/50 hover:bg-light-surface dark:hover:bg-dark-surface";
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      onImageUpload(e.target.files[0]);
+    }
+    // Reset input value to allow re-uploading the same file
+    e.target.value = '';
+  };
 
   return (
     <div className="mt-4 p-4 bg-light-surface dark:bg-dark-surface rounded-lg">
@@ -82,6 +94,39 @@ export const BackgroundControls = ({
           />
         </div>
       )}
+
+      {/* --- IMAGE OVERLAY CONTROLS --- */}
+      <div className="mt-6 pt-4 border-t border-light-text/10 dark:border-dark-text/10">
+        <p className="font-bold text-sm mb-4">Image Overlay</p>
+        <div className="flex items-center gap-4">
+          {/* File Upload Button */}
+          <label className="flex items-center gap-2 px-4 py-2 bg-light-base dark:bg-dark-base rounded-lg font-semibold cursor-pointer hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all">
+            <Upload size={16} />
+            <span>Upload Image</span>
+            <input 
+              type="file"
+              className="hidden"
+              accept="image/png, image/jpeg, image/gif, image/webp"
+              onChange={handleFileChange}
+            />
+          </label>
+          
+          {/* Image Preview & Clear Button */}
+          {overlayImageUrl && (
+            <div className="flex items-center gap-2 p-1 pl-3 bg-light-base dark:bg-dark-base rounded-lg">
+              <img src={overlayImageUrl} alt="Overlay preview" className="w-8 h-8 rounded object-cover" />
+              <span className="text-xs font-mono truncate max-w-[100px]">Custom Image</span>
+              <button
+                onClick={onImageClear}
+                className="p-1 rounded-full hover:bg-red-500/20 text-red-500"
+                title="Clear Image"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
 
     </div>
   );

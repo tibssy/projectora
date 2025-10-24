@@ -57,6 +57,7 @@ const AnimationViewer = () => {
   const [bgColor2, setBgColor2] = useState('#b4befe'); // Default to Catppuccin lavender
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [gradientAngle, setGradientAngle] = useState(135);
+  const [overlayImageUrl, setOverlayImageUrl] = useState<string | null>(null);
 
   const {
     latestLandmark,
@@ -107,6 +108,18 @@ const AnimationViewer = () => {
     }
   }, [isWebcamRunning]);
 
+  const handleImageUpload = (file: File) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setOverlayImageUrl(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageClear = () => {
+    setOverlayImageUrl(null);
+  };
+
   if (!animation) {
     return (
       <div className="text-center mt-20">
@@ -143,11 +156,28 @@ const AnimationViewer = () => {
       <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
       <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
       <div className="relative aspect-video w-full">
-        <div className="w-full h-full rounded-lg shadow-lg" style={{ background: backgroundStyle }}>
+
+        {/* Layer 1: Background Color/Gradient */}
+        <div
+          className="absolute inset-0 w-full h-full rounded-lg shadow-lg overflow-hidden"
+          style={{ background: backgroundStyle }}
+        ></div>
+
+        {/* Layer 2: User Image Overlay */}
+        {overlayImageUrl && (
+          <img
+            src={overlayImageUrl}
+            alt="User uploaded overlay"
+            className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none"
+          />
+        )}
+
+        {/* Layer 3: Rive Canvas */}
+        <div className="relative w-full h-full z-20">
           <RiveComponent className="w-full h-full rounded-lg" />
         </div>
         
-        {/* Video Overlay (Top Layer) */}
+        {/* Layer 4: Video Overlay */}
         <video
           ref={videoRef}
           autoPlay
@@ -155,10 +185,9 @@ const AnimationViewer = () => {
           muted
           style={{ opacity: isWebcamRunning ? videoOpacity : 0 }}
           className={`
-            absolute top-0 left-0 w-full h-full object-cover rounded-lg
-            transform -scale-x-100
-            transition-opacity duration-300
-            pointer-events-none
+            absolute inset-0 w-full h-full object-cover rounded-lg
+            transform -scale-x-100 transition-opacity duration-300
+            pointer-events-none z-30
           `}
         ></video>
       </div>
@@ -224,6 +253,9 @@ const AnimationViewer = () => {
           setColor2={setBgColor2}
           gradientAngle={gradientAngle}
           setGradientAngle={setGradientAngle}
+          overlayImageUrl={overlayImageUrl}
+          onImageUpload={handleImageUpload}
+          onImageClear={handleImageClear}
         />
       </Modal>
 
