@@ -38,7 +38,7 @@ function reducer(state: State, action: Action): State {
  * @param videoRef A React ref to the <video> element.
  * @returns An object with tracking data, status, and control functions.
  */
-export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | null>) => {
+export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | null>, isPaused: boolean = false) => {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [latestLandmark, setLatestLandmark] = useState<Landmark | null>(null);
   const [, startTransition] = useTransition();
@@ -71,7 +71,7 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
     const video = videoRef.current;
     const landmarker = poseLandmarkerRef.current;
     
-    if (!video || !landmarker || video.paused || video.ended) {
+    if (isPaused || state.status !== 'RUNNING' || !video || !landmarker || video.paused || video.ended) {
       animationFrameIdRef.current = requestAnimationFrame(predictWebcam);
       return;
     }
@@ -82,7 +82,7 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
       }
     });
     animationFrameIdRef.current = requestAnimationFrame(predictWebcam);
-  }, [videoRef, startTransition]);
+  }, [videoRef, startTransition, state.status, isPaused]);
 
   useEffect(() => {
     if (state.status === 'RUNNING') {

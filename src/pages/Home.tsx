@@ -27,6 +27,14 @@ const animations = [
     likes: 0,
     views: 1,
   },
+  {
+    id: 4,
+    title: "Grinshadow",
+    theme: "Halloween",
+    thumbnailUrl: "https://res.cloudinary.com/dls8hlthp/image/upload/v1761328482/swappy-20251024_185341_isqtcu.png", // Placeholder image
+    likes: 0,
+    views: 1,
+  },
 ];
 
 const Home = () => {

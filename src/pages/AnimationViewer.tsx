@@ -4,6 +4,7 @@ import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
 import { useRive } from '@rive-app/react-canvas';
 import { usePoseTracking } from '../hooks/usePoseTracking';
 import { BackgroundControls } from '../components/BackgroundControls';
+import { Modal } from '../components/Modal';
 
 const animations = [
   {
@@ -30,6 +31,14 @@ const animations = [
     likes: 0,
     views: 1,
   },
+  {
+    id: 4,
+    title: 'Grinshadow',
+    theme: 'Halloween',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761328854/monster5_qlqyzr.riv',
+    likes: 0,
+    views: 1,
+  },
 ];
 
 const SMOOTHING_ALPHA = 0.3;
@@ -46,6 +55,7 @@ const AnimationViewer = () => {
   const [backgroundMode, setBackgroundMode] = useState<'solid' | 'gradient'>('solid');
   const [bgColor1, setBgColor1] = useState('#313244'); // Default to Catppuccin surface color
   const [bgColor2, setBgColor2] = useState('#b4befe'); // Default to Catppuccin lavender
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const {
     latestLandmark,
@@ -54,7 +64,7 @@ const AnimationViewer = () => {
     error,
     startWebcam,
     stopWebcam
-  } = usePoseTracking(videoRef);
+  } = usePoseTracking(videoRef, isModalOpen);
 
   const { RiveComponent, canvas } = useRive({
     src: animation ? animation.riveUrl : '',
@@ -176,17 +186,17 @@ const AnimationViewer = () => {
               />
             </div>
           )}
+
+          <button 
+            onClick={() => setIsModalOpen(true)}
+            className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all"
+          >
+            Customize Background
+          </button>
+
         </div>
         <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
       </div>
-      <BackgroundControls
-          mode={backgroundMode}
-          setMode={setBackgroundMode}
-          color1={bgColor1}
-          setColor1={setBgColor1}
-          color2={bgColor2}
-          setColor2={setBgColor2}
-        />
       
       {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
       {isWebcamRunning && (
@@ -198,6 +208,22 @@ const AnimationViewer = () => {
           <p>Nose Z (depth): {latestLandmark?.z.toFixed(3)}</p>
         </div>
       )}
+
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="Customize Background"
+      >
+        <BackgroundControls
+          mode={backgroundMode}
+          setMode={setBackgroundMode}
+          color1={bgColor1}
+          setColor1={setBgColor1}
+          color2={bgColor2}
+          setColor2={setBgColor2}
+        />
+      </Modal>
+
     </div>
   );
 };
