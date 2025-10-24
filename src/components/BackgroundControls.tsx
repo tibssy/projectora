@@ -10,6 +10,8 @@ type BackgroundControlsProps = {
   setColor1: (color: string) => void;
   color2: string;
   setColor2: (color: string) => void;
+  gradientAngle: number;
+  setGradientAngle: (angle: number) => void;
 };
 
 export const BackgroundControls = ({
@@ -19,6 +21,8 @@ export const BackgroundControls = ({
   setColor1,
   color2,
   setColor2,
+  gradientAngle,
+  setGradientAngle,
 }: BackgroundControlsProps) => {
 
   const buttonBaseClass = "px-3 py-1 text-sm rounded-md transition-colors";
@@ -60,6 +64,25 @@ export const BackgroundControls = ({
           </div>
         )}
       </div>
+
+      {/* Gradient Angle Slider */}
+      {mode === 'gradient' && (
+        <div className="mt-6">
+          <label htmlFor="angle-slider" className="block text-sm font-bold mb-2 text-center">
+            Gradient Angle ({gradientAngle}°)
+          </label>
+          <input
+            id="angle-slider"
+            type="range"
+            min="0"
+            max="360"
+            value={gradientAngle}
+            onChange={(e) => setGradientAngle(parseInt(e.target.value))}
+            className="w-full h-2 bg-light-text/20 dark:bg-dark-text/20 rounded-lg appearance-none cursor-pointer accent-light-mauve dark:accent-dark-mauve"
+          />
+        </div>
+      )}
+
     </div>
   );
 };

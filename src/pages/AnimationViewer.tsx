@@ -56,6 +56,7 @@ const AnimationViewer = () => {
   const [bgColor1, setBgColor1] = useState('#313244'); // Default to Catppuccin surface color
   const [bgColor2, setBgColor2] = useState('#b4befe'); // Default to Catppuccin lavender
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [gradientAngle, setGradientAngle] = useState(135);
 
   const {
     latestLandmark,
@@ -135,7 +136,7 @@ const AnimationViewer = () => {
 
   const backgroundStyle = backgroundMode === 'solid'
     ? bgColor1
-    : `linear-gradient(to bottom right, ${bgColor1}, ${bgColor2})`;
+    : `linear-gradient(${gradientAngle}deg, ${bgColor1}, ${bgColor2})`;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -221,6 +222,8 @@ const AnimationViewer = () => {
           setColor1={setBgColor1}
           color2={bgColor2}
           setColor2={setBgColor2}
+          gradientAngle={gradientAngle}
+          setGradientAngle={setGradientAngle}
         />
       </Modal>
 
