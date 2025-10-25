@@ -12,7 +12,15 @@ Built with:
 
 ## Demo
 
+[Visit Projectora](https://tibssy.github.io/projectora/)
+
+### Landscape mode
+
 ![Image](https://github.com/user-attachments/assets/9831e80b-cf6a-4774-826f-84da19250e9e)
+
+### Portrait mode
+
+![Image](https://github.com/user-attachments/assets/1bc61ad7-83a8-44c0-bbfb-5f29e17e427c)
 
 ---
 

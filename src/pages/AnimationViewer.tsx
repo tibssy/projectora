@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, RectangleHorizontal, RectangleVertical } from 'lucide-react';
 import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger } from '@rive-app/react-webgl2';
 import { usePoseTracking } from '../hooks/usePoseTracking';
 import { BackgroundControls } from '../components/BackgroundControls';
@@ -62,6 +62,7 @@ const AnimationViewer = () => {
   const [scale, setScale] = useState(1);
   const [positionX, setPositionX] = useState(0);
   const [positionY, setPositionY] = useState(0);
+  const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
 
   const {
     latestLandmark,
@@ -159,6 +160,10 @@ const AnimationViewer = () => {
     }
   };
 
+  const toggleAspectRatio = () => {
+    setAspectRatio(prev => (prev === 'landscape' ? 'portrait' : 'landscape'));
+  };
+
   const backgroundStyle = backgroundMode === 'solid'
     ? bgColor1
     : `linear-gradient(${gradientAngle}deg, ${bgColor1}, ${bgColor2})`;
@@ -172,8 +177,18 @@ const AnimationViewer = () => {
     <div className="max-w-4xl mx-auto">
       <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
       <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
-      <div className="relative aspect-video w-full overflow-hidden rounded-lg">
 
+      <div className="w-full flex justify-center">
+        <div 
+          className={`
+            relative w-full overflow-hidden rounded-lg
+            transition-all duration-500 ease-in-out
+            ${aspectRatio === 'landscape' 
+              ? 'aspect-video' 
+              : 'aspect-[9/16] max-w-sm'
+            }
+          `}
+        >
         {/* Layer 1: Background Color/Gradient */}
         <div
           className="absolute inset-0 w-full h-full rounded-lg shadow-lg overflow-hidden"
@@ -210,6 +225,7 @@ const AnimationViewer = () => {
             pointer-events-none z-30
           `}
         ></video>
+        </div>
       </div>
 
       <div className="mt-6 flex justify-between items-center">
@@ -250,6 +266,18 @@ const AnimationViewer = () => {
             className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all"
           >
             Trigger Action
+          </button>
+
+          <button 
+            onClick={toggleAspectRatio}
+            title={aspectRatio === 'landscape' ? 'Switch to Portrait (9:16)' : 'Switch to Landscape (16:9)'}
+            className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all"
+          >
+            {aspectRatio === 'landscape' ? (
+              <RectangleVertical size={20} />
+            ) : (
+              <RectangleHorizontal size={20} />
+            )}
           </button>
 
         </div>
