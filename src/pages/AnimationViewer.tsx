@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, Eye, EyeOff } from 'lucide-react';
-import { useRive } from '@rive-app/react-canvas';
+import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger } from '@rive-app/react-webgl2';
 import { usePoseTracking } from '../hooks/usePoseTracking';
 import { BackgroundControls } from '../components/BackgroundControls';
 import { Modal } from '../components/Modal';
@@ -35,7 +35,7 @@ const animations = [
     id: 4,
     title: 'Grinshadow',
     theme: 'Halloween',
-    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761328854/monster5_qlqyzr.riv',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761344347/monster5_ai1izr.riv',
     likes: 0,
     views: 1,
   },
@@ -68,7 +68,7 @@ const AnimationViewer = () => {
     stopWebcam
   } = usePoseTracking(videoRef, isModalOpen);
 
-  const { RiveComponent, canvas } = useRive({
+  const { rive, RiveComponent, canvas } = useRive({
     src: animation ? animation.riveUrl : '',
     autoplay: true,
     stateMachines: 'State Machine 1',
@@ -119,6 +119,14 @@ const AnimationViewer = () => {
   const handleImageClear = () => {
     setOverlayImageUrl(null);
   };
+
+  const viewModel = useViewModel(rive); // Get the default view model from the Rive instance
+  const viewModelInstance = useViewModelInstance(viewModel, { rive }); // Get the default instance AND bind it
+
+  const { trigger: firePrimaryTrigger } = useViewModelInstanceTrigger(
+    'primaryTrigger',
+    viewModelInstance
+  );
 
   if (!animation) {
     return (
@@ -222,6 +230,14 @@ const AnimationViewer = () => {
             className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all"
           >
             Customize Background
+          </button>
+
+          <button 
+            onClick={() => firePrimaryTrigger?.()}
+            disabled={!firePrimaryTrigger}
+            className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all"
+          >
+            Trigger Action
           </button>
 
         </div>
