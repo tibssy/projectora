@@ -5,6 +5,7 @@ import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigge
 import { usePoseTracking } from '../hooks/usePoseTracking';
 import { BackgroundControls } from '../components/BackgroundControls';
 import { Modal } from '../components/Modal';
+import { TransformControls } from '../components/TransformControls';
 
 const animations = [
   {
@@ -58,6 +59,9 @@ const AnimationViewer = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [gradientAngle, setGradientAngle] = useState(135);
   const [overlayImageUrl, setOverlayImageUrl] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
+  const [positionX, setPositionX] = useState(0);
+  const [positionY, setPositionY] = useState(0);
 
   const {
     latestLandmark,
@@ -159,11 +163,16 @@ const AnimationViewer = () => {
     ? bgColor1
     : `linear-gradient(${gradientAngle}deg, ${bgColor1}, ${bgColor2})`;
 
+  const riveTransformStyle = {
+    transform: `translateX(${positionX}%) translateY(${positionY}%) scale(${scale})`,
+    transition: 'transform 150ms ease-out', // Adds a smooth feel to the sliders
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
       <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
-      <div className="relative aspect-video w-full">
+      <div className="relative aspect-video w-full overflow-hidden rounded-lg">
 
         {/* Layer 1: Background Color/Gradient */}
         <div
@@ -181,8 +190,11 @@ const AnimationViewer = () => {
         )}
 
         {/* Layer 3: Rive Canvas */}
-        <div className="relative w-full h-full z-20">
-          <RiveComponent className="w-full h-full rounded-lg" />
+        <div 
+          className="relative w-full h-full z-20"
+          style={riveTransformStyle}
+        >
+          <RiveComponent className="w-full h-full" />
         </div>
         
         {/* Layer 4: Video Overlay */}
@@ -243,6 +255,15 @@ const AnimationViewer = () => {
         </div>
         <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
       </div>
+
+      <TransformControls
+        scale={scale}
+        setScale={setScale}
+        positionX={positionX}
+        setPositionX={setPositionX}
+        positionY={positionY}
+        setPositionY={setPositionY}
+      />
       
       {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
       {isWebcamRunning && (

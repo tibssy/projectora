@@ -12,7 +12,7 @@ Built with:
 
 ## Demo
 
-> TODO: screenshot
+![Image](https://github.com/user-attachments/assets/9831e80b-cf6a-4774-826f-84da19250e9e)
 
 ---
 
