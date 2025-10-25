@@ -1,8 +1,8 @@
 import { useRef, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import screenfull from 'screenfull';
-import { ArrowLeft, Eye, EyeOff, RectangleHorizontal, RectangleVertical, Maximize, Minimize } from 'lucide-react';
-import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger } from '@rive-app/react-webgl2';
+import { ArrowLeft, Eye, EyeOff, Maximize, Minimize } from 'lucide-react';
+import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger, Layout, Alignment } from '@rive-app/react-webgl2';
 import { usePoseTracking } from '../hooks/usePoseTracking';
 import { BackgroundControls } from '../components/BackgroundControls';
 import { Modal } from '../components/Modal';
@@ -63,7 +63,6 @@ const AnimationViewer = () => {
   const [scale, setScale] = useState(1);
   const [positionX, setPositionX] = useState(0);
   const [positionY, setPositionY] = useState(0);
-  const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -80,6 +79,9 @@ const AnimationViewer = () => {
     src: animation ? animation.riveUrl : '',
     autoplay: true,
     stateMachines: 'State Machine 1',
+    layout: new Layout({
+      alignment: Alignment.BottomCenter,
+    })
   });
 
   useEffect(() => {
@@ -188,10 +190,6 @@ const AnimationViewer = () => {
     }
   };
 
-  const toggleAspectRatio = () => {
-    setAspectRatio(prev => (prev === 'landscape' ? 'portrait' : 'landscape'));
-  };
-
   const backgroundStyle = backgroundMode === 'solid'
     ? bgColor1
     : `linear-gradient(${gradientAngle}deg, ${bgColor1}, ${bgColor2})`;
@@ -205,63 +203,52 @@ const AnimationViewer = () => {
     <div className="max-w-4xl mx-auto">
       <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
       <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
-
       <div className="w-full flex justify-center" ref={containerRef}>
-        <div 
-          className={`
-            relative w-full overflow-hidden rounded-lg
-            transition-all duration-500 ease-in-out
-            ${aspectRatio === 'landscape' 
-              ? 'aspect-video' 
-              : 'aspect-[9/16] max-w-sm'
-            }
-          `}
-        >
-        {/* Layer 1: Background Color/Gradient */}
-        <div
-          className="absolute inset-0 w-full h-full rounded-lg shadow-lg overflow-hidden"
-          style={{ background: backgroundStyle }}
-        ></div>
+        <div className="relative w-full aspect-video overflow-hidden rounded-lg">
+          {/* Layer 1: Background Color/Gradient */}
+          <div
+            className="absolute inset-0 w-full h-full rounded-lg shadow-lg overflow-hidden"
+            style={{ background: backgroundStyle }}
+          ></div>
 
-        {/* Layer 2: User Image Overlay */}
-        {overlayImageUrl && (
-          <img
-            src={overlayImageUrl}
-            alt="User uploaded overlay"
-            className="absolute inset-0 w-full h-full object-cover z-10 pointer-events-none"
-          />
-        )}
+          {/* Layer 2: User Image Overlay */}
+          {overlayImageUrl && (
+            <img
+              src={overlayImageUrl}
+              alt="User uploaded overlay"
+              className="absolute inset-0 w-full h-full object-cover object-bottom z-10 pointer-events-none"
+            />
+          )}
 
-        {/* Layer 3: Rive Canvas */}
-        <div 
-          className="relative w-full h-full z-20"
-          style={riveTransformStyle}
-        >
-          <RiveComponent className="w-full h-full" />
-        </div>
-        
-        {/* Layer 4: Video Overlay */}
-        <video
-          ref={videoRef}
-          autoPlay
-          playsInline
-          muted
-          style={{ opacity: isWebcamRunning ? videoOpacity : 0 }}
-          className={`
-            absolute inset-0 w-full h-full object-cover rounded-lg
-            transform -scale-x-100 transition-opacity duration-300
-            pointer-events-none z-30
-          `}
-        ></video>
+          {/* Layer 3: Rive Canvas */}
+          <div 
+            className="relative w-full h-full z-20 origin-bottom"
+            style={riveTransformStyle}
+          >
+            <RiveComponent className="w-full h-full" />
+          </div>
+          
+          {/* Layer 4: Video Overlay */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{ opacity: isWebcamRunning ? videoOpacity : 0 }}
+            className={`
+              absolute inset-0 w-full h-full object-cover rounded-lg
+              transform -scale-x-100 transition-opacity duration-300
+              pointer-events-none z-30
+            `}
+          ></video>
 
-        <button 
-          onClick={handleFullscreenToggle}
-          className="absolute top-3 right-3 z-40 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors"
-          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen (Projector Mode)'}
-        >
-          {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
-        </button>
-
+          <button 
+            onClick={handleFullscreenToggle}
+            className="absolute top-3 right-3 z-40 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen (Projector Mode)'}
+          >
+            {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+          </button>
         </div>
       </div>
 
@@ -304,19 +291,6 @@ const AnimationViewer = () => {
           >
             Trigger Action
           </button>
-
-          <button 
-            onClick={toggleAspectRatio}
-            title={aspectRatio === 'landscape' ? 'Switch to Portrait (9:16)' : 'Switch to Landscape (16:9)'}
-            className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all"
-          >
-            {aspectRatio === 'landscape' ? (
-              <RectangleVertical size={20} />
-            ) : (
-              <RectangleHorizontal size={20} />
-            )}
-          </button>
-
         </div>
         <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
       </div>

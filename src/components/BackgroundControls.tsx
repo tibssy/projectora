@@ -106,7 +106,7 @@ export const BackgroundControls = ({
             <input 
               type="file"
               className="hidden"
-              accept="image/png, image/jpeg, image/gif, image/webp"
+              accept="image/png, image/jpeg, image/gif, image/webp, image/svg+xml"
               onChange={handleFileChange}
             />
           </label>
