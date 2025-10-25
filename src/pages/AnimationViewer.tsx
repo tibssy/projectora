@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { ArrowLeft, Eye, EyeOff, RectangleHorizontal, RectangleVertical } from 'lucide-react';
+import screenfull from 'screenfull';
+import { ArrowLeft, Eye, EyeOff, RectangleHorizontal, RectangleVertical, Maximize, Minimize } from 'lucide-react';
 import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger } from '@rive-app/react-webgl2';
 import { usePoseTracking } from '../hooks/usePoseTracking';
 import { BackgroundControls } from '../components/BackgroundControls';
@@ -63,6 +64,8 @@ const AnimationViewer = () => {
   const [positionX, setPositionX] = useState(0);
   const [positionY, setPositionY] = useState(0);
   const [aspectRatio, setAspectRatio] = useState<'landscape' | 'portrait'>('landscape');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const {
     latestLandmark,
@@ -121,6 +124,25 @@ const AnimationViewer = () => {
     reader.readAsDataURL(file);
   };
 
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (screenfull.isEnabled) {
+        setIsFullscreen(screenfull.isFullscreen);
+      }
+    };
+
+    if (screenfull.isEnabled) {
+      screenfull.on('change', handleFullscreenChange);
+    }
+
+    // Cleanup the event listener on unmount
+    return () => {
+      if (screenfull.isEnabled) {
+        screenfull.off('change', handleFullscreenChange);
+      }
+    };
+  }, []);
+
   const handleImageClear = () => {
     setOverlayImageUrl(null);
   };
@@ -132,6 +154,12 @@ const AnimationViewer = () => {
     'primaryTrigger',
     viewModelInstance
   );
+
+  const handleFullscreenToggle = () => {
+    if (screenfull.isEnabled && containerRef.current) {
+      screenfull.toggle(containerRef.current);
+    }
+  };
 
   if (!animation) {
     return (
@@ -178,7 +206,7 @@ const AnimationViewer = () => {
       <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
       <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
 
-      <div className="w-full flex justify-center">
+      <div className="w-full flex justify-center" ref={containerRef}>
         <div 
           className={`
             relative w-full overflow-hidden rounded-lg
@@ -225,6 +253,15 @@ const AnimationViewer = () => {
             pointer-events-none z-30
           `}
         ></video>
+
+        <button 
+          onClick={handleFullscreenToggle}
+          className="absolute top-3 right-3 z-40 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors"
+          title={isFullscreen ? 'Exit Fullscreen' : 'Enter Fullscreen (Projector Mode)'}
+        >
+          {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+        </button>
+
         </div>
       </div>
 
