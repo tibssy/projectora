@@ -21,7 +21,7 @@ const animations = [
     id: 2,
     title: 'Mormo',
     theme: 'Halloween',
-    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1760902733/monster2_xrbdi7.riv',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761537008/monster2_trigger_2_uce5yd.riv',
     likes: 0,
     views: 1,
   },
@@ -37,7 +37,7 @@ const animations = [
     id: 4,
     title: 'Grinshadow',
     theme: 'Halloween',
-    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761344347/monster5_ai1izr.riv',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761537565/monster5_updated_jpmhls.riv',
     likes: 0,
     views: 1,
   },
@@ -78,7 +78,9 @@ const AnimationViewer = () => {
   const { rive, RiveComponent, canvas } = useRive({
     src: animation ? animation.riveUrl : '',
     autoplay: true,
+    artboard: 'Artboard',
     stateMachines: 'State Machine 1',
+    autoBind: false,
     layout: new Layout({
       alignment: Alignment.BottomCenter,
     })
@@ -154,7 +156,12 @@ const AnimationViewer = () => {
 
   const { trigger: firePrimaryTrigger } = useViewModelInstanceTrigger(
     'primaryTrigger',
-    viewModelInstance
+    viewModelInstance,
+    {
+        onTrigger: () => {
+            console.log('Trigger Fired!');
+        }
+    }
   );
 
   const handleFullscreenToggle = () => {
