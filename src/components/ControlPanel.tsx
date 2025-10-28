@@ -18,12 +18,12 @@ export const ControlPanel = (props: ControlPanelProps) => {
 
   const activeTabIndex = TABS.findIndex(tab => tab.id === activeTab);
 
-  const buttonBaseClass = "flex-1 flex items-center justify-center gap-2 p-3 font-semibold transition-colors duration-300 rounded-lg";
+  const buttonBaseClass = "flex-1 flex items-center justify-center gap-2 p-1 font-semibold transition-colors duration-300 rounded-lg";
   const activeClass = "bg-light-mauve dark:bg-dark-mauve text-light-base dark:text-dark-base";
   const inactiveClass = "text-light-text/60 dark:text-dark-text/60 hover:bg-light-surface/50 dark:hover:bg-dark-surface/50";
 
   return (
-    <div className="mt-6">
+    <div className="mt-4">
       {/* Tab Buttons */}
       <div className="flex p-1 space-x-1 bg-light-surface dark:bg-dark-surface rounded-xl">
         {TABS.map(tab => (

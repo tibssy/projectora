@@ -42,8 +42,8 @@ export const AppearanceControls = ({
   };
 
   return (
-    <div className="mt-4 p-4 bg-light-surface dark:bg-dark-surface rounded-lg">
-      <div className="flex items-center justify-between mb-4">
+    <div className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg">
+      <div className="flex items-center justify-between mb-2">
         <p className="font-bold text-sm">Background Style</p>
         {/* Mode Toggle Buttons */}
         <div className="flex p-1 bg-light-base dark:bg-dark-base rounded-lg">
@@ -66,13 +66,11 @@ export const AppearanceControls = ({
       <div className="flex gap-4 justify-center">
         <div className="flex flex-col items-center gap-2">
           <HexColorPicker color={color1} onChange={setColor1} />
-          <span className="font-mono text-xs p-1 bg-light-base dark:bg-dark-base rounded">{color1}</span>
         </div>
         {/* Conditionally render the second color picker for gradient mode */}
         {mode === 'gradient' && (
           <div className="flex flex-col items-center gap-2">
             <HexColorPicker color={color2} onChange={setColor2} />
-            <span className="font-mono text-xs p-1 bg-light-base dark:bg-dark-base rounded">{color2}</span>
           </div>
         )}
       </div>
@@ -96,7 +94,7 @@ export const AppearanceControls = ({
       )}
 
       {/* --- IMAGE OVERLAY CONTROLS --- */}
-      <div className="mt-6 pt-4 border-t border-light-text/10 dark:border-dark-text/10">
+      <div className="mt-2 pt-4 border-t border-light-text/10 dark:border-dark-text/10">
         <p className="font-bold text-sm mb-4">Image Overlay</p>
         <div className="flex items-center gap-4">
           {/* File Upload Button */}

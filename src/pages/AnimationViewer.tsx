@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import screenfull from 'screenfull';
-import { ArrowLeft, Eye, EyeOff, Maximize, Minimize } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Maximize, Minimize, Camera, CameraOff, Loader2, Heart } from 'lucide-react';
 import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger, Layout, Alignment } from '@rive-app/react-webgl2';
 import { usePoseTracking } from '../hooks/usePoseTracking';
 import { ControlPanel } from '../components/ControlPanel';
@@ -53,7 +53,7 @@ const AnimationViewer = () => {
   const [lastOpacity, setLastOpacity] = useState(DEFAULT_OPACITY);
 
   const [backgroundMode, setBackgroundMode] = useState<'solid' | 'gradient'>('solid');
-  const [bgColor1, setBgColor1] = useState('#313244'); // Default to Catppuccin surface color
+  const [bgColor1, setBgColor1] = useState('#99a5f6bc'); // Default to Catppuccin surface color
   const [bgColor2, setBgColor2] = useState('#b4befe'); // Default to Catppuccin lavender
   const [gradientAngle, setGradientAngle] = useState(135);
   const [overlayImageUrl, setOverlayImageUrl] = useState<string | null>(null);
@@ -274,8 +274,10 @@ const AnimationViewer = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <Link to="/" className="inline-flex items-center gap-2 mb-6 text-sm text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
-      <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
+      <div className="flex justify-between">
+        <h1 className="text-4xl font-bold text-light-lavender dark:text-dark-lavender mb-4">{animation.title}</h1>
+        <Link to="/" className="inline-flex items-center gap-2 mb-4 text-md text-light-text/80 dark:text-dark-text/80 hover:text-light-mauve dark:hover:text-dark-mauve transition-colors"><ArrowLeft size={16} />Back to Gallery</Link>
+      </div>
       <div className="w-full flex justify-center" ref={containerRef}>
         <div className="relative w-full aspect-video overflow-hidden rounded-lg">
           {/* Layer 1: Background Color/Gradient */}
@@ -322,36 +324,59 @@ const AnimationViewer = () => {
           >
             {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
           </button>
-        </div>
-      </div>
 
-      <div className="mt-6 flex justify-between items-center">
-        <div className="flex items-center gap-4 flex-wrap">
-          <button className="px-4 py-2 bg-light-mauve/80 dark:bg-dark-mauve/80 text-light-base dark:text-dark-base rounded-lg font-semibold hover:bg-light-mauve dark:hover:bg-dark-mauve transition-colors">❤️ Like ({animation.likes})</button>
-          <button onClick={isWebcamRunning ? stopWebcam : startWebcam} disabled={isLoading} className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all">
-            {isLoading ? 'Loading Model...' : isWebcamRunning ? 'Stop Camera Control' : 'Start Camera Control'}
+          <button
+            onClick={isWebcamRunning ? stopWebcam : startWebcam}
+            disabled={isLoading}
+            className="absolute top-14 right-3 z-40 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            title={isWebcamRunning ? 'Stop Camera' : 'Start Camera'}
+          >
+            {isLoading ? (
+              <Loader2 size={20} className="animate-spin" />
+            ) : isWebcamRunning ? (
+              <CameraOff size={20} />
+            ) : (
+              <Camera size={20} />
+            )}
           </button>
-          
+
           {/* Opacity Control Group */}
           {isWebcamRunning && (
-            <div className="flex items-center gap-2 p-2 bg-light-surface dark:bg-dark-surface rounded-lg">
-              <button onClick={toggleMirrorVisibility} title={videoOpacity > 0 ? "Hide Mirror" : "Show Mirror"}>
+            // ADD w-16 HERE to constrain the width
+            <div className="absolute top-26 right-3 z-40 p-3 w-9 bg-black/30 backdrop-blur-sm rounded-lg flex flex-col items-center gap-3">
+              <button 
+                onClick={toggleMirrorVisibility} 
+                title={videoOpacity > 0 ? "Hide Mirror" : "Show Mirror"}
+                className="text-white"
+              >
                 {videoOpacity > 0 ? <Eye size={20} /> : <EyeOff size={20} />}
               </button>
-              <input 
-                type="range"
-                min="0"
-                max="1"
-                step="0.01"
-                value={videoOpacity}
-                onChange={handleOpacityChange}
-                className="w-24 h-2 bg-light-text/20 dark:bg-dark-text/20 rounded-lg appearance-none cursor-pointer accent-light-mauve dark:accent-dark-mauve"
-              />
+              
+              <div className="h-24 flex items-center">
+                <input 
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={videoOpacity}
+                  onChange={handleOpacityChange}
+                  className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer -rotate-90 accent-light-mauve dark:accent-dark-mauve"
+                />
+              </div>
             </div>
           )}
 
+          <button className="absolute bottom-3 left-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors">
+            <Heart size={18} className="text-red-400 fill-current" />
+            <span className="font-semibold text-sm">{animation.likes.toLocaleString()}</span>
+          </button>
+
+          <div className="absolute bottom-3 right-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm">
+            <Eye size={18} />
+            <span className="font-semibold text-sm">{animation.views.toLocaleString()}</span>
+          </div>
+
         </div>
-        <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
       </div>
 
       <ControlPanel

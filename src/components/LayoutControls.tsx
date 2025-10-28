@@ -16,7 +16,7 @@ export const LayoutControls = ({
   setPositionY,
 }: LayoutControlsProps) => {
   return (
-    <div className="mt-4 p-4 bg-light-surface dark:bg-dark-surface rounded-lg space-y-4">
+    <div className="p-4 bg-light-surface dark:bg-dark-surface rounded-lg space-y-6">
       {/* Scale Slider */}
       <div>
         <label htmlFor="scale-slider" className="block text-sm font-bold mb-1">
