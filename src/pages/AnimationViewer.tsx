@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from "react";
+import { useRef, useEffect, useState, useCallback } from "react";
 import { useParams, Link } from "react-router-dom";
 import screenfull from "screenfull";
 import {
@@ -126,6 +126,8 @@ const AnimationViewer = () => {
     const [multiplierX, setMultiplierX] = useState(1);
     const [multiplierY, setMultiplierY] = useState(1);
     const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+    const [isUiVisible, setIsUiVisible] = useState(true);
+    const inactivityTimerRef = useRef<number | null>(null);
 
     const {
         latestLandmarks,
@@ -292,6 +294,7 @@ const AnimationViewer = () => {
             setLastOpacity(DEFAULT_OPACITY);
         }
     }, [isWebcamRunning]);
+
     const handleImageUpload = (file: File) => {
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -299,6 +302,7 @@ const AnimationViewer = () => {
         };
         reader.readAsDataURL(file);
     };
+
     useEffect(() => {
         const h = () => {
             if (screenfull.isEnabled) setIsFullscreen(screenfull.isFullscreen);
@@ -308,6 +312,7 @@ const AnimationViewer = () => {
             if (screenfull.isEnabled) screenfull.off("change", h);
         };
     }, []);
+
     const handleImageClear = () => setOverlayImageUrl(null);
 
     const { trigger: firePrimaryTrigger } = useViewModelInstanceTrigger(
@@ -315,6 +320,7 @@ const AnimationViewer = () => {
         viewModelInstance,
         { onTrigger: () => console.log("Primary Trigger Fired!") }
     );
+
     const { trigger: fireSecondaryTrigger } = useViewModelInstanceTrigger(
         "secondaryTrigger",
         viewModelInstance,
@@ -365,6 +371,40 @@ const AnimationViewer = () => {
         if (screenfull.isEnabled && containerRef.current)
             screenfull.toggle(containerRef.current);
     };
+
+    // --- Handler to manage user activity ---
+    const handleActivity = useCallback(() => {
+        if (!isFullscreen) return;
+
+        setIsUiVisible(true);
+
+        if (inactivityTimerRef.current) {
+            clearTimeout(inactivityTimerRef.current);
+        }
+
+        inactivityTimerRef.current = window.setTimeout(() => {
+            setIsUiVisible(false);
+        }, 3000);
+    }, [isFullscreen]);
+
+    // --- Manage the activity timer lifecycle ---
+    useEffect(() => {
+        if (isFullscreen) {
+            handleActivity();
+        } else {
+            setIsUiVisible(true);
+            if (inactivityTimerRef.current) {
+                clearTimeout(inactivityTimerRef.current);
+            }
+        }
+
+        return () => {
+            if (inactivityTimerRef.current) {
+                clearTimeout(inactivityTimerRef.current);
+            }
+        };
+    }, [isFullscreen, handleActivity]);
+
     if (!animation)
         return (
             <div className="text-center mt-20">
@@ -377,11 +417,13 @@ const AnimationViewer = () => {
                 </Link>
             </div>
         );
+
     const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const n = parseFloat(e.target.value);
         setVideoOpacity(n);
         if (n > 0) setLastOpacity(n);
     };
+
     const toggleMirrorVisibility = () => {
         if (videoOpacity > 0) setVideoOpacity(0);
         else setVideoOpacity(lastOpacity > 0 ? lastOpacity : 0.3);
@@ -412,7 +454,11 @@ const AnimationViewer = () => {
                     Back to Gallery
                 </Link>
             </div>
-            <div className="w-full flex justify-center" ref={containerRef}>
+            <div
+                className="w-full flex justify-center"
+                ref={containerRef}
+                onMouseMove={handleActivity}
+            >
                 <div className="relative w-full aspect-video overflow-hidden rounded-lg">
                     <div
                         className="absolute inset-0 w-full h-full rounded-lg shadow-lg overflow-hidden"
@@ -445,79 +491,101 @@ const AnimationViewer = () => {
                         height="720"
                         className="absolute inset-0 w-full h-full z-35 pointer-events-none"
                     ></canvas>
-                    <button
-                        onClick={handleFullscreenToggle}
-                        className="absolute top-3 right-3 z-40 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors"
-                        title={
-                            isFullscreen
-                                ? "Exit Fullscreen"
-                                : "Enter Fullscreen (Projector Mode)"
-                        }
+
+                    {/* Controls */}
+                    <div
+                        className={`absolute top-3 right-3 z-40 flex flex-col gap-2 transition-opacity duration-500 ${
+                            !isFullscreen || isUiVisible
+                                ? "opacity-100"
+                                : "opacity-0"
+                        }`}
                     >
-                        {isFullscreen ? (
-                            <Minimize size={20} />
-                        ) : (
-                            <Maximize size={20} />
-                        )}
-                    </button>
-                    <button
-                        onClick={isWebcamRunning ? stopWebcam : startWebcam}
-                        disabled={isLoading}
-                        className="absolute top-14 right-3 z-40 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={isWebcamRunning ? "Stop Camera" : "Start Camera"}
-                    >
-                        {isLoading ? (
-                            <Loader2 size={20} className="animate-spin" />
-                        ) : isWebcamRunning ? (
-                            <CameraOff size={20} />
-                        ) : (
-                            <Camera size={20} />
-                        )}
-                    </button>
-                    {isWebcamRunning && (
-                        <div className="absolute top-28 right-3 z-40 p-3 w-9 bg-black/30 backdrop-blur-sm rounded-lg flex flex-col items-center gap-3">
-                            <button
-                                onClick={toggleMirrorVisibility}
-                                title={
-                                    videoOpacity > 0
-                                        ? "Hide Mirror"
-                                        : "Show Mirror"
-                                }
-                                className="text-white"
-                            >
-                                {videoOpacity > 0 ? (
-                                    <Eye size={20} />
-                                ) : (
-                                    <EyeOff size={20} />
-                                )}
-                            </button>
-                            <div className="h-24 flex items-center">
-                                <input
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.01"
-                                    value={videoOpacity}
-                                    onChange={handleOpacityChange}
-                                    className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer -rotate-90 accent-light-mauve dark:accent-dark-mauve"
-                                />
+                        <button
+                            onClick={handleFullscreenToggle}
+                            className="absolute top-0 right-0 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors"
+                            title={
+                                isFullscreen
+                                    ? "Exit Fullscreen"
+                                    : "Enter Fullscreen (Projector Mode)"
+                            }
+                        >
+                            {isFullscreen ? (
+                                <Minimize size={20} />
+                            ) : (
+                                <Maximize size={20} />
+                            )}
+                        </button>
+                        <button
+                            onClick={isWebcamRunning ? stopWebcam : startWebcam}
+                            disabled={isLoading}
+                            className="absolute top-12 right-0 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={
+                                isWebcamRunning ? "Stop Camera" : "Start Camera"
+                            }
+                        >
+                            {isLoading ? (
+                                <Loader2 size={20} className="animate-spin" />
+                            ) : isWebcamRunning ? (
+                                <CameraOff size={20} />
+                            ) : (
+                                <Camera size={20} />
+                            )}
+                        </button>
+                        {isWebcamRunning && (
+                            <div className="absolute top-24 right-0 p-3 w-9 bg-black/30 backdrop-blur-sm rounded-lg flex flex-col items-center gap-3">
+                                <button
+                                    onClick={toggleMirrorVisibility}
+                                    title={
+                                        videoOpacity > 0
+                                            ? "Hide Mirror"
+                                            : "Show Mirror"
+                                    }
+                                    className="text-white"
+                                >
+                                    {videoOpacity > 0 ? (
+                                        <Eye size={20} />
+                                    ) : (
+                                        <EyeOff size={20} />
+                                    )}
+                                </button>
+                                <div className="h-24 flex items-center">
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.01"
+                                        value={videoOpacity}
+                                        onChange={handleOpacityChange}
+                                        className="w-24 h-1 bg-white/20 rounded-lg appearance-none cursor-pointer -rotate-90 accent-light-mauve dark:accent-dark-mauve"
+                                    />
+                                </div>
                             </div>
-                        </div>
-                    )}
-                    <button className="absolute bottom-3 left-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors">
+                        )}
+                    </div>
+
+                    <button
+                        className={`absolute bottom-3 left-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-opacity duration-500 ${
+                            !isFullscreen || isUiVisible
+                                ? "opacity-100"
+                                : "opacity-0"
+                        }`}
+                    >
                         <Heart
                             size={18}
                             className="text-red-400 fill-current"
                         />
-                        <span className="font-semibold text-sm">
-                            {animation.likes.toLocaleString()}
-                        </span>
+                        <span>{animation.likes.toLocaleString()}</span>
                     </button>
-                    <div className="absolute bottom-3 right-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm">
+
+                    <div
+                        className={`absolute bottom-3 right-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm transition-opacity duration-500 ${
+                            !isFullscreen || isUiVisible
+                                ? "opacity-100"
+                                : "opacity-0"
+                        }`}
+                    >
                         <Eye size={18} />
-                        <span className="font-semibold text-sm">
-                            {animation.views.toLocaleString()}
-                        </span>
+                        <span>{animation.views.toLocaleString()}</span>
                     </div>
                 </div>
             </div>
