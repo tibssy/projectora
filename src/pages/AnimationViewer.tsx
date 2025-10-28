@@ -136,7 +136,7 @@ const AnimationViewer = () => {
         stopWebcam,
     } = usePoseTracking(videoRef);
 
-    const { rive, RiveComponent, canvas } = useRive({
+    const { rive, RiveComponent } = useRive({
         src: animation ? animation.riveUrl : "",
         autoplay: true,
         artboard: "Artboard",
