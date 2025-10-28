@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Move, Zap, Palette, Target } from "lucide-react";
 import { LayoutControls, type LayoutControlsProps } from "./LayoutControls";
 import {
