@@ -4,9 +4,7 @@ import screenfull from 'screenfull';
 import { ArrowLeft, Eye, EyeOff, Maximize, Minimize } from 'lucide-react';
 import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger, Layout, Alignment } from '@rive-app/react-webgl2';
 import { usePoseTracking } from '../hooks/usePoseTracking';
-import { BackgroundControls } from '../components/BackgroundControls';
-import { Modal } from '../components/Modal';
-import { TransformControls } from '../components/TransformControls';
+import { ControlPanel } from '../components/ControlPanel';
 
 const animations = [
   {
@@ -57,7 +55,6 @@ const AnimationViewer = () => {
   const [backgroundMode, setBackgroundMode] = useState<'solid' | 'gradient'>('solid');
   const [bgColor1, setBgColor1] = useState('#313244'); // Default to Catppuccin surface color
   const [bgColor2, setBgColor2] = useState('#b4befe'); // Default to Catppuccin lavender
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [gradientAngle, setGradientAngle] = useState(135);
   const [overlayImageUrl, setOverlayImageUrl] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
@@ -65,6 +62,10 @@ const AnimationViewer = () => {
   const [positionY, setPositionY] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [timeInterval, setTimeInterval] = useState(0); // 0 = off
+  const [isProximityEnabled, setIsProximityEnabled] = useState(false);
+  const [proximityThreshold, setProximityThreshold] = useState(0.4);
+  const wasCloseRef = useRef(false);
 
   const {
     latestLandmark,
@@ -73,7 +74,7 @@ const AnimationViewer = () => {
     error,
     startWebcam,
     stopWebcam
-  } = usePoseTracking(videoRef, isModalOpen);
+  } = usePoseTracking(videoRef);
 
   const { rive, RiveComponent, canvas } = useRive({
     src: animation ? animation.riveUrl : '',
@@ -159,10 +160,75 @@ const AnimationViewer = () => {
     viewModelInstance,
     {
         onTrigger: () => {
-            console.log('Trigger Fired!');
+            console.log('Primary Trigger Fired!');
         }
     }
   );
+
+  const { trigger: fireSecondaryTrigger } = useViewModelInstanceTrigger(
+    'secondaryTrigger',
+    viewModelInstance,
+      {
+        onTrigger: () => {
+            console.log('Secondary Trigger Fired!');
+        }
+    }
+  );
+
+  useEffect(() => {
+    // Only run the timer if an interval is set and the camera is on
+    if (timeInterval === 0 || !isWebcamRunning) {
+      return;
+    }
+
+    let timeoutId: number;
+
+    const scheduleTrigger = () => {
+      const delay = timeInterval === -1 
+        ? 30000 + Math.random() * 90000 // Random between 30s and 2m
+        : timeInterval * 1000;
+
+      timeoutId = window.setTimeout(() => {
+        firePrimaryTrigger?.();
+        scheduleTrigger(); // Schedule the next one
+      }, delay);
+    };
+
+    scheduleTrigger();
+
+    // Cleanup function: this is critical!
+    return () => clearTimeout(timeoutId);
+
+  }, [timeInterval, isWebcamRunning, firePrimaryTrigger]);
+
+  useEffect(() => {
+    // Only run if enabled, camera is on, and we have data
+    if (!isProximityEnabled || !isWebcamRunning || !latestLandmark) {
+      return;
+    }
+
+    // MediaPipe's Z is negative, and smaller numbers mean closer.
+    // We use Math.abs to make it an intuitive "distance".
+    const isCurrentlyClose = Math.abs(latestLandmark.z) > proximityThreshold;
+
+    // Edge Detection: fire only when the state *changes*
+    if (isCurrentlyClose && !wasCloseRef.current) {
+      // User just entered the zone
+      firePrimaryTrigger?.();
+      wasCloseRef.current = true; // Update state
+    } else if (!isCurrentlyClose && wasCloseRef.current) {
+      // User just left the zone
+      fireSecondaryTrigger?.(); // Fire the optional secondary trigger
+      wasCloseRef.current = false; // Update state
+    }
+  }, [
+    latestLandmark, 
+    isProximityEnabled, 
+    isWebcamRunning, 
+    proximityThreshold, 
+    firePrimaryTrigger, 
+    fireSecondaryTrigger
+  ]);
 
   const handleFullscreenToggle = () => {
     if (screenfull.isEnabled && containerRef.current) {
@@ -284,63 +350,43 @@ const AnimationViewer = () => {
             </div>
           )}
 
-          <button 
-            onClick={() => setIsModalOpen(true)}
-            className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all"
-          >
-            Customize Background
-          </button>
-
-          <button 
-            onClick={() => firePrimaryTrigger?.()}
-            disabled={!firePrimaryTrigger}
-            className="px-4 py-2 bg-light-surface dark:bg-dark-surface rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:ring-2 hover:ring-light-mauve dark:hover:ring-dark-mauve transition-all"
-          >
-            Trigger Action
-          </button>
         </div>
         <div className="text-sm text-light-text/70 dark:text-dark-text/70">👁 {animation.views.toLocaleString()} views</div>
       </div>
 
-      <TransformControls
+      <ControlPanel
+        // Layout Props
         scale={scale}
         setScale={setScale}
         positionX={positionX}
         setPositionX={setPositionX}
         positionY={positionY}
         setPositionY={setPositionY}
+        // Interaction Props
+        firePrimaryTrigger={firePrimaryTrigger}
+        latestLandmark={latestLandmark}
+        timeInterval={timeInterval}
+        setTimeInterval={setTimeInterval}
+        isProximityEnabled={isProximityEnabled}
+        setIsProximityEnabled={setIsProximityEnabled}
+        proximityThreshold={proximityThreshold}
+        setProximityThreshold={setProximityThreshold}
+        // Appearance Props
+        mode={backgroundMode}
+        setMode={setBackgroundMode}
+        color1={bgColor1}
+        setColor1={setBgColor1}
+        color2={bgColor2}
+        setColor2={setBgColor2}
+        gradientAngle={gradientAngle}
+        setGradientAngle={setGradientAngle}
+        overlayImageUrl={overlayImageUrl}
+        onImageUpload={handleImageUpload}
+        onImageClear={handleImageClear}
       />
-      
-      {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
-      {isWebcamRunning && (
-        <div className="mt-4 p-4 bg-light-surface dark:bg-dark-surface rounded-lg text-xs font-mono text-light-text/80 dark:text-dark-text/80">
-          <p className="font-bold mb-2">Live Tracking Data:</p>
-          <p>Webcam Status: <span className="text-green-400">ACTIVE</span></p>
-          <p>Nose X: {latestLandmark?.x.toFixed(3)}</p>
-          <p>Nose Y: {latestLandmark?.y.toFixed(3)}</p>
-          <p>Nose Z (depth): {latestLandmark?.z.toFixed(3)}</p>
-        </div>
-      )}
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title="Customize Background"
-      >
-        <BackgroundControls
-          mode={backgroundMode}
-          setMode={setBackgroundMode}
-          color1={bgColor1}
-          setColor1={setBgColor1}
-          color2={bgColor2}
-          setColor2={setBgColor2}
-          gradientAngle={gradientAngle}
-          setGradientAngle={setGradientAngle}
-          overlayImageUrl={overlayImageUrl}
-          onImageUpload={handleImageUpload}
-          onImageClear={handleImageClear}
-        />
-      </Modal>
+      {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
+
 
     </div>
   );

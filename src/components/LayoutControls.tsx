@@ -1,4 +1,4 @@
-type TransformControlsProps = {
+export type LayoutControlsProps = {
   scale: number;
   setScale: (value: number) => void;
   positionX: number;
@@ -7,14 +7,14 @@ type TransformControlsProps = {
   setPositionY: (value: number) => void;
 };
 
-export const TransformControls = ({
+export const LayoutControls = ({
   scale,
   setScale,
   positionX,
   setPositionX,
   positionY,
   setPositionY,
-}: TransformControlsProps) => {
+}: LayoutControlsProps) => {
   return (
     <div className="mt-4 p-4 bg-light-surface dark:bg-dark-surface rounded-lg space-y-4">
       {/* Scale Slider */}

@@ -1,7 +1,7 @@
 import { HexColorPicker } from 'react-colorful';
 import { Upload, X } from 'lucide-react';
 
-type BackgroundControlsProps = {
+export type AppearanceControlsProps = {
   mode: 'solid' | 'gradient';
   setMode: (mode: 'solid' | 'gradient') => void;
   color1: string;
@@ -15,7 +15,7 @@ type BackgroundControlsProps = {
   onImageClear: () => void;
 };
 
-export const BackgroundControls = ({
+export const AppearanceControls = ({
   mode,
   setMode,
   color1,
@@ -27,7 +27,7 @@ export const BackgroundControls = ({
   overlayImageUrl,
   onImageUpload,
   onImageClear,
-}: BackgroundControlsProps) => {
+}: AppearanceControlsProps) => {
 
   const buttonBaseClass = "px-3 py-1 text-sm rounded-md transition-colors";
   const activeButtonClass = "bg-light-mauve dark:bg-dark-mauve text-light-base dark:text-dark-base";
