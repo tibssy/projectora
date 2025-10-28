@@ -1,21 +1,31 @@
-// src/components/ControlPanel.tsx
 import { useState } from 'react';
-import { Move, Zap, Palette } from 'lucide-react';
+import { Move, Zap, Palette, Target } from 'lucide-react';
 import { LayoutControls, type LayoutControlsProps } from './LayoutControls';
 import { InteractionControls, type InteractionControlsProps } from './InteractionControls';
 import { AppearanceControls, type AppearanceControlsProps } from './AppearanceControls';
+import { CalibrationControls, type CalibrationControlsProps } from './CalibrationControls';
+
+
+export type { CalibrationControlsProps } from './CalibrationControls';
+type ControlPanelProps = LayoutControlsProps & InteractionControlsProps & AppearanceControlsProps & CalibrationControlsProps & {
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+};
 
 const TABS = [
   { id: 'layout', label: 'Layout', icon: Move },
   { id: 'interaction', label: 'Interaction', icon: Zap },
   { id: 'appearance', label: 'Appearance', icon: Palette },
+  { id: 'calibration', label: 'Calibration', icon: Target },
 ];
 
-type ControlPanelProps = LayoutControlsProps & InteractionControlsProps & AppearanceControlsProps;
+// type ControlPanelProps = LayoutControlsProps & InteractionControlsProps & AppearanceControlsProps;
 
 export const ControlPanel = (props: ControlPanelProps) => {
-  const [activeTab, setActiveTab] = useState<'layout' | 'interaction' | 'appearance'>('layout');
+  // const [activeTab, setActiveTab] = useState<'layout' | 'interaction' | 'appearance'>('layout');
+  // const activeTabIndex = TABS.findIndex(tab => tab.id === activeTab);
 
+  const { activeTab, setActiveTab } = props; // Receive state from parent
   const activeTabIndex = TABS.findIndex(tab => tab.id === activeTab);
 
   const buttonBaseClass = "flex-1 flex items-center justify-center gap-2 p-1 font-semibold transition-colors duration-300 rounded-lg";
@@ -52,6 +62,9 @@ export const ControlPanel = (props: ControlPanelProps) => {
           </div>
           <div className="w-full flex-shrink-0 p-1">
             <AppearanceControls {...props} />
+          </div>
+          <div className="w-full flex-shrink-0 p-1">
+            <CalibrationControls {...props} />
           </div>
         </div>
       </div>

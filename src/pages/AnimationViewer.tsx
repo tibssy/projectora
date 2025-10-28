@@ -2,7 +2,7 @@ import { useRef, useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import screenfull from 'screenfull';
 import { ArrowLeft, Eye, EyeOff, Maximize, Minimize, Camera, CameraOff, Loader2, Heart } from 'lucide-react';
-import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger, Layout, Alignment } from '@rive-app/react-webgl2';
+import { useRive, useViewModel, useViewModelInstance, useViewModelInstanceTrigger, Layout, Alignment, useViewModelInstanceNumber } from '@rive-app/react-webgl2';
 import { usePoseTracking } from '../hooks/usePoseTracking';
 import { ControlPanel } from '../components/ControlPanel';
 
@@ -19,7 +19,7 @@ const animations = [
     id: 2,
     title: 'Mormo',
     theme: 'Halloween',
-    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761537008/monster2_trigger_2_uce5yd.riv',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761649711/monster2_xy_igbzoz.riv',
     likes: 0,
     views: 1,
   },
@@ -27,7 +27,7 @@ const animations = [
     id: 3,
     title: 'Vicis Chomp',
     theme: 'Halloween',
-    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1760903457/monster3_4_mze1rv.riv',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761649711/monster3_xy_chnnml.riv',
     likes: 0,
     views: 1,
   },
@@ -35,10 +35,23 @@ const animations = [
     id: 4,
     title: 'Grinshadow',
     theme: 'Halloween',
-    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761537565/monster5_updated_jpmhls.riv',
+    riveUrl: 'https://res.cloudinary.com/dls8hlthp/raw/upload/v1761649711/monster4_xy_negkdr.riv',
     likes: 0,
     views: 1,
   },
+];
+
+const POSE_CONNECTIONS = [
+  // Torso
+  [11, 12], [23, 24], [11, 23], [12, 24],
+  // Left Arm
+  [11, 13], [13, 15], [15, 17], [15, 19], [15, 21], [17, 19],
+  // Right Arm
+  [12, 14], [14, 16], [16, 18], [16, 20], [16, 22], [18, 20],
+  // Left Leg
+  [23, 25], [25, 27], [27, 29], [27, 31], [29, 31],
+  // Right Leg
+  [24, 26], [26, 28], [28, 30], [28, 32], [30, 32]
 ];
 
 const SMOOTHING_ALPHA = 0.3;
@@ -48,13 +61,13 @@ const AnimationViewer = () => {
   const { animationId } = useParams<{ animationId: string }>();
   const animation = animations.find(anim => anim.id === parseInt(animationId || ''));
   const videoRef = useRef<HTMLVideoElement>(null);
-  const smoothedPointerRef = useRef({ x: 0.5, y: 0.5 });
+  const smoothedPointerRef = useRef({ x: 0.5, y: 0.5, z: 0 });
   const [videoOpacity, setVideoOpacity] = useState(DEFAULT_OPACITY);
   const [lastOpacity, setLastOpacity] = useState(DEFAULT_OPACITY);
 
   const [backgroundMode, setBackgroundMode] = useState<'solid' | 'gradient'>('solid');
   const [bgColor1, setBgColor1] = useState('#99a5f6bc'); // Default to Catppuccin surface color
-  const [bgColor2, setBgColor2] = useState('#b4befe'); // Default to Catppuccin lavender
+  const [bgColor2, setBgColor2] = useState('#C7AAEC'); // Default to Catppuccin lavender
   const [gradientAngle, setGradientAngle] = useState(135);
   const [overlayImageUrl, setOverlayImageUrl] = useState<string | null>(null);
   const [scale, setScale] = useState(1);
@@ -67,8 +80,15 @@ const AnimationViewer = () => {
   const [proximityThreshold, setProximityThreshold] = useState(0.4);
   const wasCloseRef = useRef(false);
 
+  const [activeTab, setActiveTab] = useState('layout');
+  const [centerX, setCenterX] = useState(50);
+  const [centerY, setCenterY] = useState(50);
+  const [multiplierX, setMultiplierX] = useState(1);
+  const [multiplierY, setMultiplierY] = useState(1);
+  const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
+
   const {
-    latestLandmark,
+    latestLandmarks,
     isWebcamRunning,
     isLoading,
     error,
@@ -87,32 +107,118 @@ const AnimationViewer = () => {
     })
   });
 
-  useEffect(() => {
-    if (!latestLandmark || !canvas || !isWebcamRunning) return;
+  const viewModel = useViewModel(rive); // Get the default view model from the Rive instance
+  const viewModelInstance = useViewModelInstance(viewModel, { rive }); // Get the default instance AND bind it
+  const { setValue: setRiveX } = useViewModelInstanceNumber('x', viewModelInstance);
+  const { setValue: setRiveY } = useViewModelInstanceNumber('y', viewModelInstance);
 
-    const rawNormalizedX = 1.0 - latestLandmark.x;
-    const rawNormalizedY = latestLandmark.y;
+  useEffect(() => {
+    const noseLandmark = latestLandmarks ? latestLandmarks[0] : null;
+    if (!noseLandmark || !canvas || !isWebcamRunning || !setRiveX || !setRiveY) return;
+
+    const rawNormalizedX = 1.0 - noseLandmark.x;
+    const rawNormalizedY = noseLandmark.y;
+    const rawZ = noseLandmark.z;
 
     const newSmoothedX = (rawNormalizedX * SMOOTHING_ALPHA) + (smoothedPointerRef.current.x * (1 - SMOOTHING_ALPHA));
     const newSmoothedY = (rawNormalizedY * SMOOTHING_ALPHA) + (smoothedPointerRef.current.y * (1 - SMOOTHING_ALPHA));
+    const newSmoothedZ = (rawZ * SMOOTHING_ALPHA) + (smoothedPointerRef.current.z * (1 - SMOOTHING_ALPHA));
 
-    smoothedPointerRef.current = { x: newSmoothedX, y: newSmoothedY };
+    smoothedPointerRef.current = { x: newSmoothedX, y: newSmoothedY, z: newSmoothedZ };
 
-    const riveRect = canvas.getBoundingClientRect();
-    const localX = newSmoothedX * riveRect.width;
-    const localY = newSmoothedY * riveRect.height;
-    const clientX = riveRect.left + localX;
-    const clientY = riveRect.top + localY;
+    const movementX = (smoothedPointerRef.current.x - (centerX / 100)) * multiplierX;
+    const movementY = (smoothedPointerRef.current.y - (centerY / 100)) * multiplierY;
 
-    const fakeEvent = new MouseEvent('mousemove', {
-      view: window,
-      bubbles: true,
-      cancelable: true,
-      clientX: clientX,
-      clientY: clientY,
-    });
-    canvas.dispatchEvent(fakeEvent);
-  }, [latestLandmark, canvas, isWebcamRunning]);
+    // Convert normalized 0.0-1.0 coordinates to Rive's 0-100 range
+    const finalX = 50 + (movementX * 100);
+    const finalY = 50 + (movementY * 100);
+
+    setRiveX(finalX);
+    setRiveY(finalY);
+
+  }, [latestLandmarks, canvas, isWebcamRunning, setRiveX, setRiveY, centerX, centerY, multiplierX, multiplierY]);
+
+  // drawing loop
+  useEffect(() => {
+    const canvas = overlayCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let animationFrameId: number;
+
+    const render = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Only draw if the right tab is active and camera is on
+      if (activeTab === 'calibration' && isWebcamRunning) {
+        // Draw center point
+        const crosshairX = (centerX / 100) * canvas.width;
+        const crosshairY = (centerY / 100) * canvas.height;
+        ctx.strokeStyle = '#f38ba8'; // Catppuccin Rosewater
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(crosshairX - 10, crosshairY);
+        ctx.lineTo(crosshairX + 10, crosshairY);
+        ctx.moveTo(crosshairX, crosshairY - 10);
+        ctx.lineTo(crosshairX, crosshairY + 10);
+        ctx.stroke();
+
+        // Draw landmarks
+        if (latestLandmarks) {
+          ctx.strokeStyle = '#94e2d5'; // Catppuccin Teal for the lines
+          ctx.lineWidth = 2;
+
+          POSE_CONNECTIONS.forEach((connection) => {
+            const [startIdx, endIdx] = connection;
+            const startLandmark = latestLandmarks[startIdx];
+            const endLandmark = latestLandmarks[endIdx];
+
+            // Only draw the line if both points were detected
+            if (startLandmark && endLandmark) {
+              // Apply horizontal inversion for correct mirroring
+              const startX = (1.0 - startLandmark.x) * canvas.width;
+              const startY = startLandmark.y * canvas.height;
+              const endX = (1.0 - endLandmark.x) * canvas.width;
+              const endY = endLandmark.y * canvas.height;
+
+              ctx.beginPath();
+              ctx.moveTo(startX, startY);
+              ctx.lineTo(endX, endY);
+              ctx.stroke();
+            }
+          });
+
+          ctx.fillStyle = '#a6e3a1';
+          latestLandmarks.forEach((landmark, index) => {
+            if (index === 0) return;
+            const landmarkX = (1.0 - landmark.x) * canvas.width;
+            const landmarkY = landmark.y * canvas.height;
+            ctx.beginPath();
+            ctx.arc(landmarkX, landmarkY, 4, 0, 2 * Math.PI); // Smaller dots for body
+            ctx.fill();
+          });
+
+          const nose = latestLandmarks[0];
+          if (nose) {
+            ctx.fillStyle = '#89b4fa'; // Catppuccin Sapphire for the nose
+            const noseX = (1.0 - nose.x) * canvas.width; // INVERSION FIX
+            const noseY = nose.y * canvas.height;
+            ctx.beginPath();
+            ctx.arc(noseX, noseY, 8, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        }
+      }
+      animationFrameId = window.requestAnimationFrame(render);
+    };
+    render();
+
+    return () => {
+      window.cancelAnimationFrame(animationFrameId);
+    };
+  }, [activeTab, isWebcamRunning, latestLandmarks, centerX, centerY]); // Re-run when these change
+
 
   useEffect(() => {
     if (isWebcamRunning) {
@@ -152,8 +258,6 @@ const AnimationViewer = () => {
     setOverlayImageUrl(null);
   };
 
-  const viewModel = useViewModel(rive); // Get the default view model from the Rive instance
-  const viewModelInstance = useViewModelInstance(viewModel, { rive }); // Get the default instance AND bind it
 
   const { trigger: firePrimaryTrigger } = useViewModelInstanceTrigger(
     'primaryTrigger',
@@ -175,6 +279,7 @@ const AnimationViewer = () => {
     }
   );
 
+
   useEffect(() => {
     // Only run the timer if an interval is set and the camera is on
     if (timeInterval === 0 || !isWebcamRunning) {
@@ -195,34 +300,26 @@ const AnimationViewer = () => {
     };
 
     scheduleTrigger();
-
-    // Cleanup function: this is critical!
     return () => clearTimeout(timeoutId);
 
   }, [timeInterval, isWebcamRunning, firePrimaryTrigger]);
 
   useEffect(() => {
-    // Only run if enabled, camera is on, and we have data
-    if (!isProximityEnabled || !isWebcamRunning || !latestLandmark) {
-      return;
-    }
+    const noseLandmark = latestLandmarks ? latestLandmarks[0] : null;
+    if (!isProximityEnabled || !isWebcamRunning || !noseLandmark) return;
 
-    // MediaPipe's Z is negative, and smaller numbers mean closer.
-    // We use Math.abs to make it an intuitive "distance".
-    const isCurrentlyClose = Math.abs(latestLandmark.z) > proximityThreshold;
+    const smoothedZ = smoothedPointerRef.current.z;
+    const isCurrentlyClose = Math.abs(smoothedZ) > proximityThreshold;
 
-    // Edge Detection: fire only when the state *changes*
     if (isCurrentlyClose && !wasCloseRef.current) {
-      // User just entered the zone
       firePrimaryTrigger?.();
-      wasCloseRef.current = true; // Update state
+      wasCloseRef.current = true;
     } else if (!isCurrentlyClose && wasCloseRef.current) {
-      // User just left the zone
-      fireSecondaryTrigger?.(); // Fire the optional secondary trigger
-      wasCloseRef.current = false; // Update state
+      fireSecondaryTrigger?.();
+      wasCloseRef.current = false;
     }
   }, [
-    latestLandmark, 
+    latestLandmarks, 
     isProximityEnabled, 
     isWebcamRunning, 
     proximityThreshold, 
@@ -317,6 +414,14 @@ const AnimationViewer = () => {
             `}
           ></video>
 
+          {/* Drawing Overlay Canvas */}
+          <canvas
+            ref={overlayCanvasRef}
+            width="1280" // Set a reasonable resolution
+            height="720"
+            className="absolute inset-0 w-full h-full z-35 pointer-events-none" // High z-index
+          ></canvas>
+
           <button 
             onClick={handleFullscreenToggle}
             className="absolute top-3 right-3 z-40 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors"
@@ -389,13 +494,14 @@ const AnimationViewer = () => {
         setPositionY={setPositionY}
         // Interaction Props
         firePrimaryTrigger={firePrimaryTrigger}
-        latestLandmark={latestLandmark}
+        latestLandmark={latestLandmarks ? latestLandmarks[0] : null}
         timeInterval={timeInterval}
         setTimeInterval={setTimeInterval}
         isProximityEnabled={isProximityEnabled}
         setIsProximityEnabled={setIsProximityEnabled}
         proximityThreshold={proximityThreshold}
         setProximityThreshold={setProximityThreshold}
+        smoothedLandmark={smoothedPointerRef.current}
         // Appearance Props
         mode={backgroundMode}
         setMode={setBackgroundMode}
@@ -408,6 +514,17 @@ const AnimationViewer = () => {
         overlayImageUrl={overlayImageUrl}
         onImageUpload={handleImageUpload}
         onImageClear={handleImageClear}
+
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        centerX={centerX}
+        setCenterX={setCenterX}
+        centerY={centerY}
+        setCenterY={setCenterY}
+        multiplierX={multiplierX}
+        setMultiplierX={setMultiplierX}
+        multiplierY={multiplierY}
+        setMultiplierY={setMultiplierY}
       />
 
       {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
@@ -418,3 +535,7 @@ const AnimationViewer = () => {
 };
 
 export default AnimationViewer;
+
+
+
+

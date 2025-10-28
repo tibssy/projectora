@@ -3,6 +3,7 @@ import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
 
 // --- Type Definitions ---
 export type Landmark = { x: number; y: number; z: number; };
+export type Landmarks = Landmark[];
 
 // --- State Management with a Reducer ---
 type Status = 'IDLE' | 'LOADING_MODEL' | 'READY' | 'RUNNING' | 'ERROR';
@@ -40,7 +41,8 @@ function reducer(state: State, action: Action): State {
  */
 export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | null>, isPaused: boolean = false) => {
   const [state, dispatch] = useReducer(reducer, initialState);
-  const [latestLandmark, setLatestLandmark] = useState<Landmark | null>(null);
+  // const [latestLandmark, setLatestLandmark] = useState<Landmark | null>(null);
+  const [latestLandmarks, setLatestLandmarks] = useState<Landmarks | null>(null);
   const [, startTransition] = useTransition();
   const poseLandmarkerRef = useRef<PoseLandmarker | null>(null);
   const animationFrameIdRef = useRef<number | null>(null);
@@ -77,8 +79,8 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
     }
 
     landmarker.detectForVideo(video, performance.now(), (result) => {
-      if (result.landmarks.length > 0) {
-        startTransition(() => setLatestLandmark(result.landmarks[0][0]));
+      if (result.landmarks && result.landmarks.length > 0) {
+        startTransition(() => setLatestLandmarks(result.landmarks[0]));
       }
     });
     animationFrameIdRef.current = requestAnimationFrame(predictWebcam);
@@ -131,7 +133,7 @@ export const usePoseTracking = (videoRef: React.RefObject<HTMLVideoElement | nul
   }, [stopWebcam]);
 
   return {
-    latestLandmark,
+    latestLandmarks,
     isWebcamRunning: state.status === 'RUNNING',
     isLoading: state.status === 'LOADING_MODEL',
     error: state.error,

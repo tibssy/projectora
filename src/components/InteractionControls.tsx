@@ -1,22 +1,19 @@
-// src/components/InteractionControls.tsx
+import { TriggerControls } from './TriggerControls';
 
-import { TriggerControls } from './TriggerControls'; // We can reuse this!
-
-// Define all the props this tab will need
 export type InteractionControlsProps = {
   firePrimaryTrigger: (() => void) | null;
   latestLandmark: { x: number; y: number; z: number; } | null;
-  // We also need all the props for TriggerControls
   timeInterval: number;
   setTimeInterval: (interval: number) => void;
   isProximityEnabled: boolean;
   setIsProximityEnabled: (enabled: boolean) => void;
   proximityThreshold: number;
   setProximityThreshold: (threshold: number) => void;
+  smoothedLandmark: { x: number; y: number; z: number; } | null;
 };
 
 export const InteractionControls = (props: InteractionControlsProps) => {
-  const { firePrimaryTrigger, latestLandmark } = props;
+  const { firePrimaryTrigger, latestLandmark, smoothedLandmark } = props;
   
   return (
     <div className="p-4 bg-light-surface dark:bg-dark-surface rounded-lg space-y-4">
@@ -40,9 +37,10 @@ export const InteractionControls = (props: InteractionControlsProps) => {
         <h3 className="font-bold mb-2">Live Tracking Data</h3>
         <div className="p-4 bg-light-base dark:bg-dark-base rounded-lg text-xs font-mono">
           <p>Webcam Status: <span className="text-green-400">ACTIVE</span></p>
-          <p>Nose X: {latestLandmark?.x.toFixed(3)}</p>
-          <p>Nose Y: {latestLandmark?.y.toFixed(3)}</p>
-          <p>Nose Z (depth): {latestLandmark?.z.toFixed(3)}</p>
+          {/* 3. Update the JSX to display the smoothed values */}
+          <p>X (raw): {latestLandmark?.x.toFixed(3)} | X (smooth): <span className="font-bold">{smoothedLandmark?.x.toFixed(3)}</span></p>
+          <p>Y (raw): {latestLandmark?.y.toFixed(3)} | Y (smooth): <span className="font-bold">{smoothedLandmark?.y.toFixed(3)}</span></p>
+          <p>Z (raw): {latestLandmark?.z.toFixed(3)} | Z (smooth): <span className="font-bold">{smoothedLandmark?.z.toFixed(3)}</span></p>
         </div>
       </div>
     </div>
