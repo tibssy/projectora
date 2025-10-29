@@ -23,7 +23,13 @@ import {
 } from "@rive-app/react-webgl2";
 import { usePoseTracking, type Landmarks } from "../hooks/usePoseTracking";
 import { ControlPanel } from "../components/ControlPanel";
-import { getAnimationById, type Animation } from "../firebaseApi";
+import {
+    getAnimationById,
+    incrementViewCount,
+    incrementLikeCount,
+    type Animation,
+} from "../firebaseApi";
+import { hasLikedAnimation, addLikedAnimation } from "../likedAnimations";
 
 const POSE_CONNECTIONS = [
     [11, 12],
@@ -86,6 +92,11 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
     const overlayCanvasRef = useRef<HTMLCanvasElement>(null);
     const [isUiVisible, setIsUiVisible] = useState(true);
     const inactivityTimerRef = useRef<number | null>(null);
+    const [localLikes, setLocalLikes] = useState(animation.likes);
+    const [localViews, setLocalViews] = useState(animation.views);
+    const [hasLiked, setHasLiked] = useState(() =>
+        hasLikedAnimation(animation.id)
+    );
 
     const {
         latestLandmarks,
@@ -115,6 +126,11 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
         "y",
         viewModelInstance
     );
+
+    useEffect(() => {
+        incrementViewCount(animation.id);
+        setLocalViews((prevViews) => prevViews + 1);
+    }, [animation.id]);
 
     // --- smooths ALL landmarks ---
     useEffect(() => {
@@ -153,7 +169,12 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
 
     // --- Auto-start camera when calibration tab is selected ---
     useEffect(() => {
-        if (activeTab === "calibration" && !isWebcamRunning && !isLoading) {
+        if (
+            activeTab === "calibration" &&
+            !isWebcamRunning &&
+            !isLoading &&
+            !isFullscreen
+        ) {
             startWebcam();
         }
     }, [activeTab, isWebcamRunning, isLoading, startWebcam]);
@@ -342,6 +363,15 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
         };
     }, [isFullscreen, handleActivity]);
 
+    const handleLike = useCallback(() => {
+        if (hasLiked) return;
+
+        setHasLiked(true);
+        addLikedAnimation(animation.id);
+        incrementLikeCount(animation.id);
+        setLocalLikes((prevLikes) => prevLikes + 1);
+    }, [animation.id, hasLiked]);
+
     const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const n = parseFloat(e.target.value);
         setVideoOpacity(n);
@@ -487,17 +517,23 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
                         )}
                     </div>
                     <button
-                        className={`absolute bottom-3 left-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-opacity duration-500 ${
+                        onClick={handleLike}
+                        disabled={hasLiked}
+                        className={`absolute bottom-3 left-3 z-40 flex items-center gap-2 px-3 py-1.5 text-white transition-opacity duration-500 ${
                             !isFullscreen || isUiVisible
                                 ? "opacity-100"
                                 : "opacity-0"
+                        } ${
+                            hasLiked
+                                ? "bg-black/0"
+                                : "bg-black/30 rounded-lg backdrop-blur-sm hover:bg-black/50"
                         }`}
                     >
                         <Heart
                             size={18}
                             className="text-red-400 fill-current"
                         />
-                        <span>{animation.likes.toLocaleString()}</span>
+                        <span>{localLikes.toLocaleString()}</span>
                     </button>
                     <div
                         className={`absolute bottom-3 right-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm transition-opacity duration-500 ${
@@ -507,7 +543,7 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
                         }`}
                     >
                         <Eye size={18} />
-                        <span>{animation.views.toLocaleString()}</span>
+                        <span>{localViews.toLocaleString()}</span>
                     </div>
                 </div>
             </div>
