@@ -23,45 +23,7 @@ import {
 } from "@rive-app/react-webgl2";
 import { usePoseTracking, type Landmarks } from "../hooks/usePoseTracking";
 import { ControlPanel } from "../components/ControlPanel";
-
-const animations = [
-    {
-        id: 1,
-        title: "Frenzywhisk",
-        theme: "Halloween",
-        riveUrl:
-            "https://res.cloudinary.com/dls8hlthp/raw/upload/v1760925641/monster1_wahbow.riv",
-        likes: 0,
-        views: 1,
-    },
-    {
-        id: 2,
-        title: "Mormo",
-        theme: "Halloween",
-        riveUrl:
-            "https://res.cloudinary.com/dls8hlthp/raw/upload/v1761684362/monster2_xy_bxgt5n.riv",
-        likes: 0,
-        views: 1,
-    },
-    {
-        id: 3,
-        title: "Vicis Chomp",
-        theme: "Halloween",
-        riveUrl:
-            "https://res.cloudinary.com/dls8hlthp/raw/upload/v1761649711/monster3_xy_chnnml.riv",
-        likes: 0,
-        views: 1,
-    },
-    {
-        id: 4,
-        title: "Grinshadow",
-        theme: "Halloween",
-        riveUrl:
-            "https://res.cloudinary.com/dls8hlthp/raw/upload/v1761684362/monster4_xy_osd19r.riv",
-        likes: 0,
-        views: 1,
-    },
-];
+import { getAnimationById, type Animation } from "../firebaseApi";
 
 const POSE_CONNECTIONS = [
     [11, 12],
@@ -95,11 +57,7 @@ const POSE_CONNECTIONS = [
 const SMOOTHING_ALPHA = 0.3;
 const DEFAULT_OPACITY = 0.5;
 
-const AnimationViewer = () => {
-    const { animationId } = useParams<{ animationId: string }>();
-    const animation = animations.find(
-        (anim) => anim.id === parseInt(animationId || "")
-    );
+const ViewerContent = ({ animation }: { animation: Animation }) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const smoothedLandmarksRef = useRef<Landmarks | null>(null);
     const [videoOpacity, setVideoOpacity] = useState(DEFAULT_OPACITY);
@@ -139,7 +97,7 @@ const AnimationViewer = () => {
     } = usePoseTracking(videoRef);
 
     const { rive, RiveComponent } = useRive({
-        src: animation ? animation.riveUrl : "",
+        src: animation.riveUrl,
         autoplay: true,
         artboard: "Artboard",
         stateMachines: "State Machine 1",
@@ -166,38 +124,21 @@ const AnimationViewer = () => {
             smoothedLandmarksRef.current = latestLandmarks;
             return;
         }
-
-        // Loop through all incoming raw landmarks and apply smoothing
-        const newSmoothedLandmarks = latestLandmarks.map(
-            (rawLandmark, index) => {
-                const oldSmoothedLandmark =
-                    smoothedLandmarksRef.current![index];
-                const newSmoothedX =
-                    rawLandmark.x * SMOOTHING_ALPHA +
-                    oldSmoothedLandmark.x * (1 - SMOOTHING_ALPHA);
-                const newSmoothedY =
-                    rawLandmark.y * SMOOTHING_ALPHA +
-                    oldSmoothedLandmark.y * (1 - SMOOTHING_ALPHA);
-                const newSmoothedZ =
-                    rawLandmark.z * SMOOTHING_ALPHA +
-                    oldSmoothedLandmark.z * (1 - SMOOTHING_ALPHA);
-                return { x: newSmoothedX, y: newSmoothedY, z: newSmoothedZ };
-            }
-        );
-
-        // Update the ref for the next frame
+        const newSmoothedLandmarks = latestLandmarks.map((raw, i) => {
+            const old = smoothedLandmarksRef.current![i];
+            return {
+                x: raw.x * SMOOTHING_ALPHA + old.x * (1 - SMOOTHING_ALPHA),
+                y: raw.y * SMOOTHING_ALPHA + old.y * (1 - SMOOTHING_ALPHA),
+                z: raw.z * SMOOTHING_ALPHA + old.z * (1 - SMOOTHING_ALPHA),
+            };
+        });
         smoothedLandmarksRef.current = newSmoothedLandmarks;
-
-        // smoothed nose data for control
-        const smoothedNose = newSmoothedLandmarks[0];
-        if (setRiveX && setRiveY && smoothedNose) {
-            const movementX =
-                (1.0 - smoothedNose.x - centerX / 100) * multiplierX;
-            const movementY = (smoothedNose.y - centerY / 100) * multiplierY;
-            const finalX = 50 + movementX * 100;
-            const finalY = 50 + movementY * 100;
-            setRiveX(finalX);
-            setRiveY(finalY);
+        const nose = newSmoothedLandmarks[0];
+        if (setRiveX && setRiveY && nose) {
+            const mX = (1.0 - nose.x - centerX / 100) * multiplierX;
+            const mY = (nose.y - centerY / 100) * multiplierY;
+            setRiveX(50 + mX * 100);
+            setRiveY(50 + mY * 100);
         }
     }, [
         latestLandmarks,
@@ -241,43 +182,41 @@ const AnimationViewer = () => {
                 ctx.moveTo(crosshairX, crosshairY - 16);
                 ctx.lineTo(crosshairX, crosshairY + 16);
                 ctx.stroke();
-
-                // Use the smoothed landmarks for a stable drawing
                 const landmarksToDraw = smoothedLandmarksRef.current;
+
                 if (landmarksToDraw) {
                     ctx.strokeStyle = "#AFB9F8";
                     ctx.lineWidth = 8;
-                    POSE_CONNECTIONS.forEach((connection) => {
-                        const startLandmark = landmarksToDraw[connection[0]];
-                        const endLandmark = landmarksToDraw[connection[1]];
-                        if (startLandmark && endLandmark) {
-                            const startX =
-                                (1.0 - startLandmark.x) * canvas.width;
-                            const startY = startLandmark.y * canvas.height;
-                            const endX = (1.0 - endLandmark.x) * canvas.width;
-                            const endY = endLandmark.y * canvas.height;
+                    POSE_CONNECTIONS.forEach((c) => {
+                        const s = landmarksToDraw[c[0]],
+                            e = landmarksToDraw[c[1]];
+                        if (s && e) {
+                            const sX = (1.0 - s.x) * canvas.width,
+                                sY = s.y * canvas.height;
+                            const eX = (1.0 - e.x) * canvas.width,
+                                eY = e.y * canvas.height;
                             ctx.beginPath();
-                            ctx.moveTo(startX, startY);
-                            ctx.lineTo(endX, endY);
+                            ctx.moveTo(sX, sY);
+                            ctx.lineTo(eX, eY);
                             ctx.stroke();
                         }
                     });
                     ctx.fillStyle = "#a6e3a1";
-                    landmarksToDraw.forEach((landmark, index) => {
-                        if (index === 0) return;
-                        const landmarkX = (1.0 - landmark.x) * canvas.width;
-                        const landmarkY = landmark.y * canvas.height;
+                    landmarksToDraw.forEach((l, i) => {
+                        if (i === 0) return;
+                        const lX = (1.0 - l.x) * canvas.width,
+                            lY = l.y * canvas.height;
                         ctx.beginPath();
-                        ctx.arc(landmarkX, landmarkY, 12, 0, 2 * Math.PI);
+                        ctx.arc(lX, lY, 12, 0, 2 * Math.PI);
                         ctx.fill();
                     });
                     const nose = landmarksToDraw[0];
                     if (nose) {
                         ctx.fillStyle = "#C7AAEC";
-                        const noseX = (1.0 - nose.x) * canvas.width;
-                        const noseY = nose.y * canvas.height;
+                        const nX = (1.0 - nose.x) * canvas.width,
+                            nY = nose.y * canvas.height;
                         ctx.beginPath();
-                        ctx.arc(noseX, noseY, 12, 0, 2 * Math.PI);
+                        ctx.arc(nX, nY, 12, 0, 2 * Math.PI);
                         ctx.fill();
                     }
                 }
@@ -286,7 +225,14 @@ const AnimationViewer = () => {
         };
         render();
         return () => window.cancelAnimationFrame(animationFrameId);
-    }, [activeTab, isWebcamRunning, latestLandmarks, centerX, centerY]);
+    }, [
+        activeTab,
+        isWebcamRunning,
+        latestLandmarks,
+        centerX,
+        centerY,
+        isFullscreen,
+    ]);
 
     useEffect(() => {
         if (isWebcamRunning) {
@@ -328,7 +274,7 @@ const AnimationViewer = () => {
     );
 
     useEffect(() => {
-        if (timeInterval === 0 || !isWebcamRunning) return;
+        if (timeInterval === 0) return;
         let t: number;
         const s = () => {
             const d =
@@ -342,19 +288,17 @@ const AnimationViewer = () => {
         };
         s();
         return () => clearTimeout(t);
-    }, [timeInterval, isWebcamRunning, firePrimaryTrigger]);
+    }, [timeInterval, firePrimaryTrigger]);
 
     // --- Proximity trigger uses smoothed Z value ---
     useEffect(() => {
-        const smoothedNose = smoothedLandmarksRef.current
-            ? smoothedLandmarksRef.current[0]
-            : null;
-        if (!isProximityEnabled || !isWebcamRunning || !smoothedNose) return;
-        const isCurrentlyClose = Math.abs(smoothedNose.z) > proximityThreshold;
-        if (isCurrentlyClose && !wasCloseRef.current) {
+        const nose = smoothedLandmarksRef.current?.[0];
+        if (!isProximityEnabled || !isWebcamRunning || !nose) return;
+        const isClose = Math.abs(nose.z) > proximityThreshold;
+        if (isClose && !wasCloseRef.current) {
             firePrimaryTrigger?.();
             wasCloseRef.current = true;
-        } else if (!isCurrentlyClose && wasCloseRef.current) {
+        } else if (!isClose && wasCloseRef.current) {
             fireSecondaryTrigger?.();
             wasCloseRef.current = false;
         }
@@ -372,16 +316,11 @@ const AnimationViewer = () => {
             screenfull.toggle(containerRef.current);
     };
 
-    // --- Handler to manage user activity ---
     const handleActivity = useCallback(() => {
         if (!isFullscreen) return;
-
         setIsUiVisible(true);
-
-        if (inactivityTimerRef.current) {
+        if (inactivityTimerRef.current)
             clearTimeout(inactivityTimerRef.current);
-        }
-
         inactivityTimerRef.current = window.setTimeout(() => {
             setIsUiVisible(false);
         }, 3000);
@@ -393,30 +332,15 @@ const AnimationViewer = () => {
             handleActivity();
         } else {
             setIsUiVisible(true);
-            if (inactivityTimerRef.current) {
+            if (inactivityTimerRef.current)
                 clearTimeout(inactivityTimerRef.current);
-            }
         }
 
         return () => {
-            if (inactivityTimerRef.current) {
+            if (inactivityTimerRef.current)
                 clearTimeout(inactivityTimerRef.current);
-            }
         };
     }, [isFullscreen, handleActivity]);
-
-    if (!animation)
-        return (
-            <div className="text-center mt-20">
-                <h1 className="text-2xl font-bold">Animation not found!</h1>
-                <Link
-                    to="/"
-                    className="text-light-mauve dark:text-dark-mauve mt-4 inline-block"
-                >
-                    Go back to Home
-                </Link>
-            </div>
-        );
 
     const handleOpacityChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const n = parseFloat(e.target.value);
@@ -502,7 +426,7 @@ const AnimationViewer = () => {
                     >
                         <button
                             onClick={handleFullscreenToggle}
-                            className="absolute top-0 right-0 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors"
+                            className="p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors"
                             title={
                                 isFullscreen
                                     ? "Exit Fullscreen"
@@ -518,7 +442,7 @@ const AnimationViewer = () => {
                         <button
                             onClick={isWebcamRunning ? stopWebcam : startWebcam}
                             disabled={isLoading}
-                            className="absolute top-12 right-0 p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-2 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title={
                                 isWebcamRunning ? "Stop Camera" : "Start Camera"
                             }
@@ -532,7 +456,7 @@ const AnimationViewer = () => {
                             )}
                         </button>
                         {isWebcamRunning && (
-                            <div className="absolute top-24 right-0 p-3 w-9 bg-black/30 backdrop-blur-sm rounded-lg flex flex-col items-center gap-3">
+                            <div className="p-3 w-9 bg-black/30 backdrop-blur-sm rounded-lg flex flex-col items-center gap-3">
                                 <button
                                     onClick={toggleMirrorVisibility}
                                     title={
@@ -562,7 +486,6 @@ const AnimationViewer = () => {
                             </div>
                         )}
                     </div>
-
                     <button
                         className={`absolute bottom-3 left-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm hover:bg-black/50 transition-opacity duration-500 ${
                             !isFullscreen || isUiVisible
@@ -576,7 +499,6 @@ const AnimationViewer = () => {
                         />
                         <span>{animation.likes.toLocaleString()}</span>
                     </button>
-
                     <div
                         className={`absolute bottom-3 right-3 z-40 flex items-center gap-2 px-3 py-1.5 bg-black/30 text-white rounded-lg backdrop-blur-sm transition-opacity duration-500 ${
                             !isFullscreen || isUiVisible
@@ -634,6 +556,60 @@ const AnimationViewer = () => {
             {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
         </div>
     );
+};
+
+const AnimationViewer = () => {
+    const { animationId } = useParams<{ animationId: string }>();
+    const [animation, setAnimation] = useState<Animation | null>(null);
+    const [isLoadingData, setIsLoadingData] = useState(true);
+    const [dataError, setDataError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!animationId) return;
+        const fetchAnimation = async () => {
+            try {
+                setIsLoadingData(true);
+                const animData = await getAnimationById(animationId);
+                if (animData) {
+                    setAnimation(animData);
+                } else {
+                    setDataError(
+                        `Animation with ID "${animationId}" could not be found.`
+                    );
+                }
+            } catch (err) {
+                console.error("Failed to fetch animation:", err);
+                setDataError(
+                    "Could not load animation data. Please try again."
+                );
+            } finally {
+                setIsLoadingData(false);
+            }
+        };
+        fetchAnimation();
+    }, [animationId]);
+
+    if (isLoadingData) {
+        return <div className="text-center mt-20">Loading Animation...</div>;
+    }
+
+    if (dataError || !animation) {
+        return (
+            <div className="text-center mt-20">
+                <h1 className="text-2xl font-bold text-red-400">
+                    {dataError || "Animation not found!"}
+                </h1>
+                <Link
+                    to="/"
+                    className="text-light-mauve dark:text-dark-mauve mt-4 inline-block"
+                >
+                    Go back to Home
+                </Link>
+            </div>
+        );
+    }
+
+    return <ViewerContent animation={animation} />;
 };
 
 export default AnimationViewer;
