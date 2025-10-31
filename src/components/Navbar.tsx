@@ -3,16 +3,7 @@ import { Link, NavLink } from "react-router-dom";
 import { Moon, Sun, Menu, X } from "lucide-react";
 
 const Navbar = () => {
-    const [isDark, setIsDark] = useState(() => {
-        if (localStorage.theme === "dark") {
-            return true;
-        }
-        return (
-            !("theme" in localStorage) &&
-            window.matchMedia("(prefers-color-scheme: dark)").matches
-        );
-    });
-
+    const [isDark, setIsDark] = useState(() => localStorage.theme !== "light");
     const [isOpen, setIsOpen] = useState(false);
 
     useEffect(() => {
