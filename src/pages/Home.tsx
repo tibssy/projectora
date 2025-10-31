@@ -64,21 +64,24 @@ const Home = () => {
                 <h2 className="text-3xl font-bold text-center mb-4">
                     Animation Gallery
                 </h2>
+
                 {/* Filter Buttons */}
-                <div className="flex justify-center gap-2 mb-8 p-1 bg-light-surface dark:bg-dark-surface rounded-xl">
-                    {THEMES.map((theme) => (
-                        <button
-                            key={theme}
-                            onClick={() => setSelectedTheme(theme)}
-                            className={`px-4 py-2 text-sm font-semibold rounded-lg transition-colors duration-300 ${
-                                selectedTheme === theme
-                                    ? "bg-light-mauve dark:bg-dark-mauve text-light-base dark:text-dark-base"
-                                    : "hover:bg-light-base/50 dark:hover:bg-dark-base/50"
-                            }`}
-                        >
-                            {theme}
-                        </button>
-                    ))}
+                <div className="flex justify-center mb-8">
+                    <div className="flex gap-2 p-1 bg-light-surface dark:bg-dark-surface rounded-xl overflow-x-auto whitespace-nowrap">
+                        {THEMES.map((theme) => (
+                            <button
+                                key={theme}
+                                onClick={() => setSelectedTheme(theme)}
+                                className={`flex-shrink-0 px-4 py-2 text-sm font-semibold rounded-lg transition-colors duration-300 ${
+                                    selectedTheme === theme
+                                        ? "bg-light-mauve dark:bg-dark-mauve text-light-base dark:text-dark-base"
+                                        : "hover:bg-light-base/50 dark:hover:bg-dark-base/50"
+                                }`}
+                            >
+                                {theme}
+                            </button>
+                        ))}
+                    </div>
                 </div>
 
                 {/* Animation Card Grid */}

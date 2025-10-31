@@ -24,7 +24,6 @@ const Navbar = () => {
 
     const links = [
         { to: "/", label: "Home" },
-        { to: "/themes", label: "Themes" },
         { to: "/submit", label: "Submit" },
         { to: "/about", label: "About" },
     ];

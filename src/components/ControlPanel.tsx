@@ -53,7 +53,7 @@ export const ControlPanel = (props: ControlPanelProps) => {
                         }`}
                     >
                         <tab.icon size={18} />
-                        <span>{tab.label}</span>
+                        <span className="hidden md:inline">{tab.label}</span>
                     </button>
                 ))}
             </div>
