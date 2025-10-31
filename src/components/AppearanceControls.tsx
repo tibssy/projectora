@@ -1,5 +1,6 @@
 import { HexColorPicker } from "react-colorful";
 import { Upload, X } from "lucide-react";
+import { type PremadeBackground } from "../premadeBackgrounds";
 
 export type AppearanceControlsProps = {
     mode: "solid" | "gradient";
@@ -13,6 +14,9 @@ export type AppearanceControlsProps = {
     overlayImageUrl: string | null;
     onImageUpload: (file: File) => void;
     onImageClear: () => void;
+    premadeBackgrounds: PremadeBackground[];
+    selectedPremadeId: string | null;
+    onPremadeSelect: (background: PremadeBackground) => void;
 };
 
 export const AppearanceControls = ({
@@ -27,6 +31,9 @@ export const AppearanceControls = ({
     overlayImageUrl,
     onImageUpload,
     onImageClear,
+    premadeBackgrounds,
+    selectedPremadeId,
+    onPremadeSelect,
 }: AppearanceControlsProps) => {
     const buttonBaseClass = "px-3 py-1 text-sm rounded-md transition-colors";
     const activeButtonClass =
@@ -141,6 +148,39 @@ export const AppearanceControls = ({
                             </button>
                         </div>
                     )}
+                </div>
+            </div>
+
+            {/* --- Premade Backgrounds Section --- */}
+            <div className="mt-6 pt-4 border-t border-light-text/10 dark:border-dark-text/10">
+                <p className="font-bold text-sm mb-4">Premade Backgrounds</p>
+                <div className="grid grid-cols-3 gap-2">
+                    {premadeBackgrounds.map((bg) => (
+                        <button
+                            key={bg.id}
+                            onClick={() => onPremadeSelect(bg)}
+                            className={`
+                relative aspect-video rounded-lg overflow-hidden border-2 transition-all group
+                ${
+                    selectedPremadeId === bg.id
+                        ? "border-light-mauve dark:border-dark-mauve ring-2 ring-light-mauve dark:ring-dark-mauve"
+                        : "border-transparent hover:border-light-mauve/50 dark:hover:border-dark-mauve/50"
+                }
+              `}
+                            title={bg.name}
+                        >
+                            <div
+                                className="absolute inset-0 transition-colors"
+                                style={{ backgroundColor: color1 }}
+                            ></div>
+
+                            <img
+                                src={bg.url}
+                                alt={bg.name}
+                                className="relative w-full h-full object-cover transition-transform group-hover:scale-110"
+                            />
+                        </button>
+                    ))}
                 </div>
             </div>
         </div>

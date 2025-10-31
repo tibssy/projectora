@@ -18,7 +18,7 @@ const AnimationCard = ({
     return (
         <div className="group overflow-hidden rounded-xl bg-light-surface dark:bg-dark-surface shadow-lg transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
             {/* Thumbnail Image */}
-            <div className="relative">
+            <div className="relative opacity-80">
                 <img
                     src={thumbnailUrl}
                     alt={`Thumbnail for ${title}`}

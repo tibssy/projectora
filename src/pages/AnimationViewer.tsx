@@ -30,6 +30,10 @@ import {
     type Animation,
 } from "../firebaseApi";
 import { hasLikedAnimation, addLikedAnimation } from "../likedAnimations";
+import {
+    PREMADE_BACKGROUNDS,
+    type PremadeBackground,
+} from "../premadeBackgrounds";
 
 const POSE_CONNECTIONS = [
     [11, 12],
@@ -60,6 +64,13 @@ const POSE_CONNECTIONS = [
     [30, 32],
 ];
 
+const THEME_COLORS = {
+    Halloween: "#9F73DB",
+    Christmas: "#89b4fa",
+    Nature: "#a6e3a1",
+    Generic: "#313244",
+};
+
 const SMOOTHING_ALPHA = 0.3;
 const DEFAULT_OPACITY = 0.5;
 
@@ -71,8 +82,8 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
     const [backgroundMode, setBackgroundMode] = useState<"solid" | "gradient">(
         "solid"
     );
-    const [bgColor1, setBgColor1] = useState("#99a5f6bc");
-    const [bgColor2, setBgColor2] = useState("#2C2584");
+    const [bgColor1, setBgColor1] = useState(THEME_COLORS.Halloween);
+    const [bgColor2, setBgColor2] = useState("#25174cff");
     const [gradientAngle, setGradientAngle] = useState(315);
     const [overlayImageUrl, setOverlayImageUrl] = useState<string | null>(null);
     const [scale, setScale] = useState(1);
@@ -96,6 +107,9 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
     const [localViews, setLocalViews] = useState(animation.views);
     const [hasLiked, setHasLiked] = useState(() =>
         hasLikedAnimation(animation.id)
+    );
+    const [selectedPremadeId, setSelectedPremadeId] = useState<string | null>(
+        null
     );
 
     const {
@@ -266,6 +280,7 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
         const reader = new FileReader();
         reader.onloadend = () => {
             setOverlayImageUrl(reader.result as string);
+            setSelectedPremadeId(null);
         };
         reader.readAsDataURL(file);
     };
@@ -280,7 +295,23 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
         };
     }, []);
 
-    const handleImageClear = () => setOverlayImageUrl(null);
+    const handleImageClear = () => {
+        setOverlayImageUrl(null);
+        setSelectedPremadeId(null);
+    };
+
+    const handlePremadeSelect = (background: PremadeBackground) => {
+        setOverlayImageUrl(background.url);
+        setSelectedPremadeId(background.id);
+        const newBgColor =
+            THEME_COLORS[background.theme] || THEME_COLORS.Generic;
+        setBgColor1(newBgColor);
+        setBackgroundMode("solid");
+    };
+
+    const handleColorChange = (color: string) => {
+        setBgColor1(color);
+    };
 
     const { trigger: firePrimaryTrigger } = useViewModelInstanceTrigger(
         "primaryTrigger",
@@ -570,7 +601,7 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
                 mode={backgroundMode}
                 setMode={setBackgroundMode}
                 color1={bgColor1}
-                setColor1={setBgColor1}
+                setColor1={handleColorChange}
                 color2={bgColor2}
                 setColor2={setBgColor2}
                 gradientAngle={gradientAngle}
@@ -588,6 +619,9 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
                 setMultiplierX={setMultiplierX}
                 multiplierY={multiplierY}
                 setMultiplierY={setMultiplierY}
+                premadeBackgrounds={PREMADE_BACKGROUNDS}
+                selectedPremadeId={selectedPremadeId}
+                onPremadeSelect={handlePremadeSelect}
             />
             {error && <p className="mt-4 text-red-400 font-medium">{error}</p>}
         </div>
