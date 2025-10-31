@@ -29,7 +29,7 @@ const Home = () => {
     }, []);
 
     const heroAnimationUrl =
-        "https://res.cloudinary.com/dls8hlthp/raw/upload/v1761865308/hero_animation_so5bsy.riv";
+        "https://res.cloudinary.com/dls8hlthp/raw/upload/v1761918738/hero_animation_xmksi1.riv";
     const { RiveComponent: HeroRiveComponent } = useRive({
         src: heroAnimationUrl,
         autoplay: true,
