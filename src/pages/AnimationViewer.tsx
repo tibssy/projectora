@@ -443,6 +443,7 @@ const ViewerContent = ({ animation }: { animation: Animation }) => {
                 className="w-full flex justify-center"
                 ref={containerRef}
                 onMouseMove={handleActivity}
+                onTouchStart={handleActivity}
             >
                 <div className="relative w-full aspect-video overflow-hidden rounded-lg">
                     <div
